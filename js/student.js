@@ -63,70 +63,23 @@ const StudentDashboard = {
    * Start QR scanning
    */
 async startScanning() {
-  console.log('🎯 [Student] Start scan clicked');
-  
   try {
-    // ✅ Cek library loaded
-    if (typeof Html5Qrcode === 'undefined') {
-      console.error('❌ html5-qrcode NOT loaded!');
-      showToast('❌ Gagal: Library scanner tidak terload', 'error');
-      return;
-    }
-    
-    // ✅ Cek QRScanner initialized
-    if (!QRScanner || !QRScanner.html5QrCode) {
-      console.error('❌ QRScanner not initialized!');
-      showToast('❌ Gagal: Scanner belum siap', 'error');
-      return;
-    }
-    
-    // ✅ Permission check
-    const hasPermission = await QRScanner.checkCameraPermission();
-    console.log('📷 Permission:', hasPermission);
-    
-    if (!hasPermission) {
-      const granted = await QRScanner.requestCameraPermission();
-      if (!granted) {
-        showToast('❌ Gagal Presensi: Izin kamera ditolak', 'error');
-        return;
-      }
-    }
-    
-    // ✅ UI update
-    document.getElementById('start-scan-btn').classList.add('hidden');
-    document.getElementById('stop-scan-btn').classList.remove('hidden');
-    document.getElementById('scan-result').classList.add('hidden');
-    
-    // ✅ Ensure container visible
+    // 1. Pastikan UI tampil dulu
     const qrReader = document.getElementById('qr-reader');
-    if (qrReader) {
-      qrReader.style.display = 'block';
-      qrReader.style.visibility = 'visible';
-      qrReader.style.minHeight = '300px';
+    qrReader.classList.remove('hidden');
+    qrReader.style.display = 'block';
+
+    // 2. Langsung panggil start
+    const started = await QRScanner.start();
+    
+    if (started) {
+      document.getElementById('start-scan-btn').classList.add('hidden');
+      document.getElementById('stop-scan-btn').classList.remove('hidden');
+    } else {
+      alert("Gagal mengakses kamera. Pastikan izin diberikan.");
     }
-    
-    // ✅ Start scanner
-    console.log('🔍 Starting QRScanner.start()...');
-    const started = await QRScanner.start({
-      cameraId: 'environment',
-      fps: 10,
-      qrbox: 250
-    });
-    
-    console.log('🎯 Started:', started);
-    
-    if (!started) {
-      showToast('❌ Gagal Presensi: Kamera tidak dapat diakses', 'error');
-      this.stopScanning();
-      return;
-    }
-    
-    showToast('📷 Memindai QR...', 'info');
-    
-  } catch (error) {
-    console.error('❌ Start scanning error:', error);
-    showToast('❌ Gagal Presensi: ' + (error.message || 'Kamera error'), 'error');
-    this.stopScanning();
+  } catch (e) {
+    console.error(e);
   }
 },
   

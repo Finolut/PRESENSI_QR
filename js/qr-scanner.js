@@ -47,85 +47,44 @@ const QRScanner = {
   /**
    * Start scanning - Mobile Friendly
    */
-  async start({ cameraId = 'environment', fps = 10, qrbox = 250 } = {}) {
+async start({ cameraId = 'environment', fps = 10, qrbox = 250 } = {}) {
     if (!this.html5QrCode) {
       console.error('❌ Scanner not initialized!');
       return false;
     }
     
-    if (this.isScanning) {
-      console.warn('⚠️ Already scanning');
-      return true;
-    }
+    if (this.isScanning) return true;
     
     try {
-      console.log('🎯 Starting scanner with camera:', cameraId);
-      
-      // ✅ Config untuk mobile
       const config = {
         fps: fps,
         qrbox: { width: qrbox, height: qrbox },
-        rememberLastUsedCamera: true
+        // Penting: aspectRatio membantu beberapa browser HP me-render video
+        aspectRatio: 1.0 
       };
-      
-      // ✅ Coba kamera belakang, fallback ke depan
-      let camera = { facingMode: cameraId };
-      
+
+      // Langsung start tanpa memanggil getUserMedia manual sebelumnya
       await this.html5QrCode.start(
-        camera,
+        { facingMode: cameraId },
         config,
-        // ✅ Success: QR detected
         (decodedText) => {
-          console.log('✅ QR scanned:', decodedText);
           this.stop();
-          if (this.onScanSuccess) {
-            this.onScanSuccess(decodedText);
-          }
+          if (this.onScanSuccess) this.onScanSuccess(decodedText);
         },
-        // ⚠️ Warning: not fatal
-        (errorMessage) => {
-          // Ignore parsing warnings
-        }
+        (errorMessage) => { /* Ignore scan quiet period */ }
       );
       
       this.isScanning = true;
-      console.log('✅ Scanner started');
       return true;
-      
     } catch (error) {
-      console.error('❌ Start error:', error.name, error.message);
-      
-      // ✅ Fallback: try front camera if back fails
-      if (cameraId === 'environment' && error.name === 'OverconstrainedError') {
-        console.log('🔄 Trying front camera...');
-        try {
-          await this.html5QrCode.start(
-            { facingMode: 'user' },
-            { fps: 10, qrbox: { width: 250, height: 250 } },
-            this.onScanSuccess,
-            () => {}
-          );
-          this.isScanning = true;
-          return true;
-        } catch (e) {
-          console.error('❌ Front camera also failed:', e);
-        }
+      console.error('❌ Camera Start Error:', error);
+      // Fallback otomatis ke kamera depan jika kamera belakang error (Overconstrained)
+      if (cameraId === 'environment') {
+        return this.start({ cameraId: 'user' });
       }
-      
-      // ✅ Error callback
-      if (this.onScanError) {
-        let code = 'camera_error';
-        if (error.name === 'NotAllowedError') code = 'permission_denied';
-        else if (error.name === 'NotFoundError') code = 'camera_not_found';
-        else if (error.name === 'NotReadableError') code = 'camera_in_use';
-        this.onScanError(code);
-      }
-      
-      this.isScanning = false;
       return false;
     }
   },
-  
   /**
    * Stop scanning
    */
