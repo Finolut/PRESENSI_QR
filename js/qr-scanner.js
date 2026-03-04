@@ -1,5 +1,5 @@
 /**
- * QR Scanner Module
+ * QR Scanner Module - FINAL FIXED VERSION
  * Menggunakan html5-qrcode library
  */
 const QRScanner = {
@@ -7,79 +7,118 @@ const QRScanner = {
   isScanning: false,
   onScanSuccess: null,
   onScanError: null,
+  containerId: null,
   
   /**
    * Initialize scanner
    */
   init(containerId, onSuccess, onError) {
+    this.containerId = containerId;
     this.onScanSuccess = onSuccess;
     this.onScanError = onError;
     
-    // Pastikan container ada
-    const container = document.getElementById(containerId);
-    if (!container) {
-      console.error(`QR container #${containerId} not found`);
-      if (onError) onError('container_not_found');
-      return;
+    // ✅ Debug: Cek library
+    if (typeof Html5Qrcode === 'undefined') {
+      console.error('❌ html5-qrcode library NOT LOADED!');
+      console.log('Available globals:', Object.keys(window).filter(k => k.toLowerCase().includes('qr')));
+      if (onError) onError('library_not_loaded');
+      return false;
     }
     
-    try {
-      this.html5QrCode = new Html5Qrcode(containerId);
-    } catch (error) {
-      console.error('Failed to init QR scanner:', error);
-      if (onError) onError('scanner_init_failed');
-    }
-  },
-  
-  /**
-   * Start scanning - Buka kamera otomatis
-   */
-  async start({ cameraId = 'environment', fps = 10, qrbox = 250 } = {}) {
-    if (this.isScanning || !this.html5QrCode) {
+    // ✅ Cek container
+    const container = document.getElementById(containerId);
+    if (!container) {
+      console.error(`❌ Container #${containerId} not found!`);
+      if (onError) onError('container_not_found');
       return false;
     }
     
     try {
-      // Konfigurasi scan
+      this.html5QrCode = new Html5Qrcode(containerId);
+      console.log('✅ QRScanner initialized');
+      return true;
+    } catch (error) {
+      console.error('❌ Init error:', error);
+      if (onError) onError('init_failed: ' + error.message);
+      return false;
+    }
+  },
+  
+  /**
+   * Start scanning - Mobile Friendly
+   */
+  async start({ cameraId = 'environment', fps = 10, qrbox = 250 } = {}) {
+    if (!this.html5QrCode) {
+      console.error('❌ Scanner not initialized!');
+      return false;
+    }
+    
+    if (this.isScanning) {
+      console.warn('⚠️ Already scanning');
+      return true;
+    }
+    
+    try {
+      console.log('🎯 Starting scanner with camera:', cameraId);
+      
+      // ✅ Config untuk mobile
       const config = {
         fps: fps,
         qrbox: { width: qrbox, height: qrbox },
-        // Optional: disable flip camera button for simplicity
         rememberLastUsedCamera: true
       };
       
-      // Start scanning
+      // ✅ Coba kamera belakang, fallback ke depan
+      let camera = { facingMode: cameraId };
+      
       await this.html5QrCode.start(
-        { facingMode: cameraId }, // 'environment' = kamera belakang
+        camera,
         config,
-        // ✅ Success callback - QR terdeteksi
-        (decodedText, decodedResult) => {
-          console.log('QR scanned:', decodedText);
-          this.stop(); // Stop setelah berhasil scan
+        // ✅ Success: QR detected
+        (decodedText) => {
+          console.log('✅ QR scanned:', decodedText);
+          this.stop();
           if (this.onScanSuccess) {
             this.onScanSuccess(decodedText);
           }
         },
-        // ⚠️ Warning callback - scan masih berjalan, bukan error fatal
+        // ⚠️ Warning: not fatal
         (errorMessage) => {
-          // Ignore parse errors during scanning
-          // console.log('Scan warning:', errorMessage);
+          // Ignore parsing warnings
         }
       );
       
       this.isScanning = true;
+      console.log('✅ Scanner started');
       return true;
       
     } catch (error) {
-      console.error('Scan start error:', error);
+      console.error('❌ Start error:', error.name, error.message);
       
-      // Handle specific camera errors
-      if (error.name === 'NotAllowedError' || error.message?.includes('permission')) {
-        if (this.onScanError) this.onScanError('permission_denied');
-      } else if (error.name === 'NotFoundError' || error.message?.includes('camera')) {
-        if (this.onScanError) this.onScanError('camera_not_found');
-      } else {
-        if (this.onScanError) this.onScanError(error.message || 'camera_error');
+      // ✅ Fallback: try front camera if back fails
+      if (cameraId === 'environment' && error.name === 'OverconstrainedError') {
+        console.log('🔄 Trying front camera...');
+        try {
+          await this.html5QrCode.start(
+            { facingMode: 'user' },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            this.onScanSuccess,
+            () => {}
+          );
+          this.isScanning = true;
+          return true;
+        } catch (e) {
+          console.error('❌ Front camera also failed:', e);
+        }
+      }
+      
+      // ✅ Error callback
+      if (this.onScanError) {
+        let code = 'camera_error';
+        if (error.name === 'NotAllowedError') code = 'permission_denied';
+        else if (error.name === 'NotFoundError') code = 'camera_not_found';
+        else if (error.name === 'NotReadableError') code = 'camera_in_use';
+        this.onScanError(code);
       }
       
       this.isScanning = false;
@@ -100,26 +139,23 @@ const QRScanner = {
       await this.html5QrCode.stop();
       await this.html5QrCode.clear();
       this.isScanning = false;
-    } catch (error) {
-      console.error('Scan stop error:', error);
+      console.log('✅ Scanner stopped');
+    } catch (e) {
+      console.error('❌ Stop error:', e);
     }
   },
   
   /**
-   * Check camera permission (tanpa membuka kamera)
+   * Check camera permission
    */
   async checkCameraPermission() {
     try {
-      // Query permission status (jika didukung browser)
       if (navigator.permissions?.query) {
-        const result = await navigator.permissions.query({ name: 'camera' });
-        return result.state === 'granted';
+        const r = await navigator.permissions.query({ name: 'camera' });
+        return r.state === 'granted';
       }
-      // Fallback: coba akses kamera sebentar
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
-      });
-      stream.getTracks().forEach(track => track.stop());
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      stream.getTracks().forEach(t => t.stop());
       return true;
     } catch {
       return false;
@@ -127,25 +163,17 @@ const QRScanner = {
   },
   
   /**
-   * Request camera permission - BUKA KAMERA OTOMATIS
+   * Request camera permission
    */
   async requestCameraPermission() {
     try {
-      // Ini akan memicu popup izin kamera di browser
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: 'environment', // Prioritaskan kamera belakang
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        } 
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } 
       });
-      
-      // Stop stream setelah permission granted (kita buka lagi nanti via html5-qrcode)
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach(t => t.stop());
       return true;
-      
-    } catch (error) {
-      console.error('Camera permission error:', error);
+    } catch (e) {
+      console.error('❌ Permission error:', e);
       return false;
     }
   },
