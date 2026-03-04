@@ -745,3 +745,93 @@ body {
 .box-checked .student-item {
   animation: none; /* Reset jika ada animasi sebelumnya */
 }
+
+/* ============================================
+   SCAN RESULT FEEDBACK
+   ============================================ */
+.scan-result {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  text-align: center;
+  font-weight: 500;
+  animation: slideUp 0.3s ease;
+}
+
+.scan-result.success {
+  background: linear-gradient(135deg, #4caf50, #43a047);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.scan-result.success strong {
+  display: block;
+  font-size: 1.1rem;
+  margin-bottom: 4px;
+}
+
+.scan-result.success small {
+  opacity: 0.9;
+  font-size: 0.85rem;
+}
+
+.scan-result.error {
+  background: linear-gradient(135deg, #f44336, #e53935);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Pulse animation untuk feedback visual */
+@keyframes pulse-success {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.scan-result.success {
+  animation: slideUp 0.3s ease, pulse-success 0.5s ease;
+}
+
+/* QR Reader container */
+.qr-reader {
+  width: 100%;
+  max-width: 320px;
+  margin: 16px auto;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #000;
+  display: none; /* Hidden by default, shown when scanning */
+}
+
+.qr-reader:not(.hidden) {
+  display: block;
+}
+
+.qr-reader video {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+/* Scanner hint */
+.scanner-hint {
+  text-align: center;
+  color: var(--gray);
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+
+/* Tombol scanner */
+#start-scan-btn, #stop-scan-btn {
+  margin-top: 8px;
+}

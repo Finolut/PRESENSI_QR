@@ -62,105 +62,177 @@ const StudentDashboard = {
   /**
    * Start QR scanning
    */
-  async startScanning() {
-    // Check camera permission first
+async startScanning() {
+  try {
+    // 1. Cek & request camera permission
     const hasPermission = await QRScanner.checkCameraPermission();
     if (!hasPermission) {
       const granted = await QRScanner.requestCameraPermission();
       if (!granted) {
-        showToast(CONFIG.MESSAGES.permission_denied, 'error');
+        showToast('❌ Gagal Presensi: Izin kamera ditolak', 'error');
         return;
       }
     }
     
-    // UI updates
+    // 2. UI Updates - Sembunyikan tombol start, tampilkan stop
     document.getElementById('start-scan-btn').classList.add('hidden');
     document.getElementById('stop-scan-btn').classList.remove('hidden');
     document.getElementById('scan-result').classList.add('hidden');
     
-    // Start scanner
-    const started = await QRScanner.start();
-    if (!started) {
-      showToast(CONFIG.MESSAGES.camera_error, 'error');
-      this.stopScanning();
+    // 3. Pastikan qr-reader container visible
+    const qrReader = document.getElementById('qr-reader');
+    if (qrReader) {
+      qrReader.classList.remove('hidden');
+      qrReader.style.display = 'block';
     }
-  },
+    
+    // 4. Start scanner
+    const started = await QRScanner.start({
+      cameraId: 'environment', // Kamera belakang
+      fps: 10,
+      qrbox: 250
+    });
+    
+    if (!started) {
+      showToast('❌ Gagal Presensi: Kamera tidak dapat diakses', 'error');
+      this.stopScanning(); // Reset UI
+      return;
+    }
+    
+    // 5. Feedback: Scanning in progress
+    showToast('📷 Memindai QR...', 'info');
+    
+  } catch (error) {
+    console.error('Start scanning error:', error);
+    showToast('❌ Gagal Presensi: ' + (error.message || 'Kamera error'), 'error');
+    this.stopScanning();
+  }
+},
   
   /**
    * Stop QR scanning
    */
-  stopScanning() {
-    QRScanner.stop();
-    document.getElementById('start-scan-btn').classList.remove('hidden');
-    document.getElementById('stop-scan-btn').classList.add('hidden');
-  },
+stopScanning() {
+  QRScanner.stop();
+  
+  // Reset UI buttons
+  document.getElementById('start-scan-btn').classList.remove('hidden');
+  document.getElementById('stop-scan-btn').classList.add('hidden');
+  
+  // Optional: Clear QR reader display
+  const qrReader = document.getElementById('qr-reader');
+  if (qrReader) {
+    // html5-qrcode auto-clears on stop, but we can hide if needed
+    // qrReader.innerHTML = '';
+  }
+},
+
   
   /**
    * Handle successful QR scan
    */
-  async handleScanSuccess(qrToken) {
-    showLoading(true);
+async handleScanSuccess(qrToken) {
+  // Stop scanning immediately after successful scan
+  this.stopScanning();
+  
+  showLoading(true);
+  
+  try {
+    // 1. Kirim check-in ke server
+    const result = await API.checkin({
+      user_id: this.currentUser.user_id,
+      device_id: this.getDeviceId(),
+      course_id: this.course_id,
+      session_id: this.session_id,
+      qr_token: qrToken,
+      ts: new Date().toISOString()
+    });
     
-    try {
-      const result = await API.checkin({
-        user_id: this.currentUser.user_id,
-        device_id: this.getDeviceId(),
-        course_id: this.course_id,
-        session_id: this.session_id,
-        qr_token: qrToken,
-        ts: new Date().toISOString()
-      });
-      
-      // Update UI
-      document.getElementById('attendance-status').textContent = '✅ Sudah Absen';
-      document.getElementById('attendance-status').className = 'status-badge status-checked';
-      document.getElementById('status-hint').textContent = 'Terima kasih, presensi Anda telah tercatat.';
-      document.getElementById('scanner-section').classList.add('hidden');
-      
-      showToast(CONFIG.MESSAGES.checkin_success, 'success');
-      
-      // Show result
-      const resultEl = document.getElementById('scan-result');
-      resultEl.textContent = `✓ Check-in berhasil! ID: ${result.presence_id}`;
-      resultEl.className = 'scan-result success';
-      resultEl.classList.remove('hidden');
-      
-    } catch (error) {
-      // Handle specific errors
-      let message = CONFIG.MESSAGES.network_error;
-      
-      if (error.message === 'token_expired') {
-        message = CONFIG.MESSAGES.token_expired;
-      } else if (error.message === 'already_checked_in') {
-        message = CONFIG.MESSAGES.checkin_already;
-        // Still update UI to show checked status
-        this.updateStatusToChecked();
-      } else if (error.message === 'session_not_active') {
-        message = CONFIG.MESSAGES.session_not_active;
-      }
-      
-      showToast(message, 'error');
-      
-      const resultEl = document.getElementById('scan-result');
-      resultEl.textContent = `✗ Gagal: ${error.message}`;
-      resultEl.className = 'scan-result error';
-      resultEl.classList.remove('hidden');
-      
-    } finally {
-      showLoading(false);
-      // Auto-stop scanning after attempt
-      this.stopScanning();
+    // 2. ✅ UPDATE UI - BERHASIL PRESENSI
+    document.getElementById('attendance-status').textContent = '✅ Sudah Absen';
+    document.getElementById('attendance-status').className = 'status-badge status-checked';
+    document.getElementById('status-hint').textContent = 'Presensi Anda telah tercatat.';
+    
+    // 3. Sembunyikan scanner section (opsional, biar rapi)
+    document.getElementById('scanner-section').classList.add('hidden');
+    
+    // 4. ✅ TAMPILKAN PESAN SUKSES BESAR
+    showToast('✅ Berhasil Presensi!', 'success');
+    
+    // 5. Tampilkan detail di scan-result
+    const resultEl = document.getElementById('scan-result');
+    resultEl.innerHTML = `
+      <strong>✅ Berhasil Presensi!</strong><br>
+      <small>ID Presensi: ${result.presence_id || '-'}</small><br>
+      <small>Waktu: ${new Date().toLocaleTimeString('id-ID')}</small>
+    `;
+    resultEl.className = 'scan-result success';
+    resultEl.classList.remove('hidden');
+    
+    // 6. Update status di server (polling)
+    this.checkAttendanceStatus();
+    
+  } catch (error) {
+    // ❌ HANDLE ERROR - GAGAL PRESENSI
+    let message = 'Gagal Presensi';
+    
+    if (error.message === 'token_expired') {
+      message = '❌ Gagal Presensi: QR sudah kedaluwarsa, silakan scan ulang';
+    } else if (error.message === 'already_checked_in') {
+      message = '⚠️ Anda sudah absen untuk sesi ini';
+      // Tetap update UI ke status checked
+      this.updateStatusToChecked();
+    } else if (error.message === 'token_invalid') {
+      message = '❌ Gagal Presensi: QR tidak valid';
+    } else if (error.message === 'session_not_active') {
+      message = '❌ Gagal Presensi: Sesi tidak aktif';
+    } else {
+      message = `❌ Gagal Presensi: ${error.message || 'Koneksi error'}`;
     }
-  },
+    
+    showToast(message, 'error');
+    
+    // Tampilkan error detail
+    const resultEl = document.getElementById('scan-result');
+    resultEl.textContent = message;
+    resultEl.className = 'scan-result error';
+    resultEl.classList.remove('hidden');
+    
+  } finally {
+    showLoading(false);
+  }
+},
   
   /**
    * Handle scan error
    */
-  handleScanError(error) {
-    console.error('Scan error:', error);
-    showToast('Gagal memindai QR', 'error');
-    this.stopScanning();
-  },
+handleScanError(error) {
+  console.error('Scan error:', error);
+  
+  // Stop scanning
+  this.stopScanning();
+  
+  // Tentukan pesan error yang user-friendly
+  let message = '❌ Gagal Presensi';
+  
+  if (error === 'camera_error' || error?.message?.includes('camera')) {
+    message = '❌ Gagal Presensi: Kamera tidak dapat diakses';
+  } else if (error === 'permission_denied') {
+    message = '❌ Gagal Presensi: Izin kamera ditolak';
+  } else if (error === 'scanner_init_failed') {
+    message = '❌ Gagal Presensi: Scanner tidak dapat diinisialisasi';
+  } else {
+    message = '❌ Gagal Presensi: Tidak dapat memindai QR';
+  }
+  
+  showToast(message, 'error');
+  
+  // Tampilkan di scan-result
+  const resultEl = document.getElementById('scan-result');
+  resultEl.textContent = message;
+  resultEl.className = 'scan-result error';
+  resultEl.classList.remove('hidden');
+},
   
   /**
    * Check attendance status from server
