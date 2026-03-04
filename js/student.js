@@ -62,24 +62,63 @@ const StudentDashboard = {
   /**
    * Start QR scanning
    */
+/**
+ * Start QR scanning - FIXED dengan permission request
+ */
 async startScanning() {
+  console.log('🎯 Start scan clicked');
+  
   try {
-    // 1. Pastikan UI tampil dulu
-    const qrReader = document.getElementById('qr-reader');
-    qrReader.classList.remove('hidden');
-    qrReader.style.display = 'block';
-
-    // 2. Langsung panggil start
-    const started = await QRScanner.start();
-    
-    if (started) {
-      document.getElementById('start-scan-btn').classList.add('hidden');
-      document.getElementById('stop-scan-btn').classList.remove('hidden');
-    } else {
-      alert("Gagal mengakses kamera. Pastikan izin diberikan.");
+    // Cek scanner initialized
+    if (!QRScanner || !QRScanner.html5QrCode) {
+      console.error('❌ QRScanner not initialized');
+      showToast('❌ Scanner belum siap. Refresh halaman.', 'error');
+      return;
     }
-  } catch (e) {
-    console.error(e);
+    
+    // Request permission DULUAN
+    console.log('📷 Requesting permission...');
+    const granted = await QRScanner.requestCameraPermission();
+    
+    if (!granted) {
+      console.error('❌ Permission denied');
+      showToast('❌ Izin kamera ditolak', 'error');
+      return;
+    }
+    
+    // UI updates
+    document.getElementById('start-scan-btn').classList.add('hidden');
+    document.getElementById('stop-scan-btn').classList.remove('hidden');
+    document.getElementById('scan-result').classList.add('hidden');
+    
+    // Pastikan container visible
+    const qrReader = document.getElementById('qr-reader');
+    if (qrReader) {
+      qrReader.style.display = 'block';
+      qrReader.style.visibility = 'visible';
+      qrReader.style.minHeight = '300px';
+    }
+    
+    // Start scanner
+    console.log('🔍 Starting scanner...');
+    const started = await QRScanner.start({
+      cameraId: 'environment',
+      fps: 10,
+      qrbox: 250
+    });
+    
+    if (!started) {
+      showToast('❌ Gagal membuka kamera', 'error');
+      this.stopScanning();
+      return;
+    }
+    
+    showToast('📷 Kamera aktif. Arahkan ke QR Code...', 'info');
+    
+  } catch (error) {
+    console.error('❌ Error:', error);
+    showToast('❌ Gagal: ' + error.message, 'error');
+    this.stopScanning();
   }
 },
   

@@ -868,3 +868,33 @@ body {
 .scanner-card .qr-reader:empty::after {
   content: "Kamera akan muncul di sini";
 }
+
+/* Force QR reader visible */
+.qr-reader {
+  width: 100%;
+  max-width: 320px;
+  min-height: 300px !important;
+  margin: 16px auto;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #000;
+  display: block !important;
+  visibility: visible !important;
+}
+
+.qr-reader video {
+  width: 100% !important;
+  height: auto !important;
+  display: block !important;
+}
+
+/* Empty state */
+.scanner-card .qr-reader:empty::after {
+  content: "Kamera akan muncul di sini";
+  color: #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  text-align: center;
+}
