@@ -63,15 +63,51 @@ const StudentDashboard = {
    * Start QR scanning
    */
 /**
- * Start QR scanning - dengan permission request
+ * Start QR scanning - dengan permission modal
  */
 async startScanning() {
+  try {
+    // Tampilkan modal permission terlebih dahulu
+    this.showCameraPermissionModal();
+  } catch (err) {
+    showToast('❌ Error: ' + err.message, 'error');
+  }
+},
+
+/**
+ * Tampilkan modal izin kamera
+ */
+showCameraPermissionModal() {
+  const modal = document.getElementById('camera-permission-modal');
+  const allowBtn = document.getElementById('camera-allow-btn');
+  const cancelBtn = document.getElementById('camera-cancel-btn');
+  
+  // Tampilkan modal
+  modal.classList.remove('hidden');
+  
+  // Handle allow button
+  allowBtn.onclick = async () => {
+    modal.classList.add('hidden');
+    await this.requestCameraAndStart();
+  };
+  
+  // Handle cancel button
+  cancelBtn.onclick = () => {
+    modal.classList.add('hidden');
+  };
+},
+
+/**
+ * Request camera permission dan mulai scanner
+ */
+async requestCameraAndStart() {
   try {
     const qrReader = document.getElementById('qr-reader');
     // Bersihkan isi container jika ada sisa scanner sebelumnya
     qrReader.innerHTML = ''; 
     
-    // Minta izin kamera
+    // Minta izin kamera langsung ke browser
+    console.log('[v0] Requesting camera permission from browser...');
     const granted = await QRScanner.requestCameraPermission();
     
     if (!granted) {
@@ -84,6 +120,7 @@ async startScanning() {
     document.getElementById('stop-scan-btn').classList.remove('hidden');
 
     // Mulai scanner (akan auto fallback ke kamera depan jika perlu)
+    console.log('[v0] Starting QR scanner...');
     const started = await QRScanner.start({ cameraId: 'environment' });
     
     if (started) {

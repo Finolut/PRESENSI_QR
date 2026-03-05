@@ -27,6 +27,31 @@
   <!-- Toast Notification -->
   <div id="toast" class="toast hidden"></div>
 
+  <!-- Camera Permission Modal -->
+  <div id="camera-permission-modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>📷 Izin Akses Kamera</h2>
+      </div>
+      <div class="modal-body">
+        <p>Aplikasi memerlukan akses ke kamera Anda untuk scan QR Code.</p>
+        <div class="modal-instructions">
+          <p><strong>Pastikan:</strong></p>
+          <ul>
+            <li>Perangkat Anda memiliki kamera</li>
+            <li>Kamera tidak sedang digunakan aplikasi lain</li>
+            <li>Klik tombol "Izinkan" di popup yang akan muncul</li>
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="camera-cancel-btn" class="btn btn-outline">Batal</button>
+        <button id="camera-allow-btn" class="btn btn-primary">Izinkan Akses Kamera</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Main Container -->
   <main id="app" class="container">
     
