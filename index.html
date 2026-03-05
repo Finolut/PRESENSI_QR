@@ -30,24 +30,27 @@
   <!-- Camera Permission Modal -->
   <div id="camera-permission-modal" class="modal hidden">
     <div class="modal-overlay"></div>
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>📷 Izin Akses Kamera</h2>
-      </div>
-      <div class="modal-body">
-        <p>Aplikasi memerlukan akses ke kamera Anda untuk scan QR Code.</p>
-        <div class="modal-instructions">
-          <p><strong>Pastikan:</strong></p>
-          <ul>
-            <li>Perangkat Anda memiliki kamera</li>
-            <li>Kamera tidak sedang digunakan aplikasi lain</li>
-            <li>Klik tombol "Izinkan" di popup yang akan muncul</li>
+    <div class="modal-content permission-modal">
+      <button id="modal-close-btn" class="modal-close-btn" aria-label="Close">×</button>
+      
+      <div class="permission-body">
+        <div class="permission-icon">📷</div>
+        <h2>Izinkan akses ke kamera?</h2>
+        <p class="permission-subtitle">Aplikasi Presensi QR memerlukan akses kamera untuk pemindaian QR Code</p>
+        
+        <div class="camera-info-box">
+          <p class="info-title">Informasi penting:</p>
+          <ul class="info-list">
+            <li>Akses kamera diperlukan untuk pemindaian QR Code</li>
+            <li>Anda dapat mencabut izin kapan saja di pengaturan browser</li>
+            <li>Video tidak akan disimpan atau dibagikan</li>
           </ul>
         </div>
       </div>
-      <div class="modal-footer">
-        <button id="camera-cancel-btn" class="btn btn-outline">Batal</button>
-        <button id="camera-allow-btn" class="btn btn-primary">Izinkan Akses Kamera</button>
+      
+      <div class="permission-actions">
+        <button id="camera-never-btn" class="btn-permission btn-never">Jangan Izinkan</button>
+        <button id="camera-allow-btn" class="btn-permission btn-allow">Izinkan Kamera</button>
       </div>
     </div>
   </div>
