@@ -1,5 +1,5 @@
 /**
- * STUDENT DASHBOARD LOGIC - VANILLA JS
+ * STUDENT DASHBOARD LOGIC - FIX KAMERA BELAKANG
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -8,16 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const qrReaderContainer = document.getElementById('qr-reader');
     const attendanceStatus = document.getElementById('attendance-status');
 
-    // 1. Fungsi untuk memulai Scan (Kamera Depan)
     async function startStudentScanner() {
-        // Reset tampilan container
+        // Membersihkan container sebelum memulai
         qrReaderContainer.innerHTML = ""; 
         
-        // Inisialisasi menggunakan modul QRScanner di qr-scanner.js
         const isInit = QRScanner.init(
             'qr-reader', 
             async (decodedText) => {
-                // Jika sukses scan
                 await handleAttendance(decodedText);
             },
             (error) => {
@@ -26,29 +23,27 @@ document.addEventListener('DOMContentLoaded', () => {
         );
 
         if (isInit) {
-            // Sembunyikan tombol Start, munculkan tombol Stop
             startBtn.classList.add('hidden');
             stopBtn.classList.remove('hidden');
 
-            // PAKSA KAMERA DEPAN menggunakan facingMode: 'user'
+            // PERUBAHAN DI SINI:
+            // Gunakan 'environment' untuk kamera belakang
             await QRScanner.start({ 
-                cameraId: 'user', 
+                cameraId: 'environment', 
                 fps: 10, 
                 qrbox: 250 
             });
         }
     }
 
-    // 2. Fungsi Kirim Data ke API
     async function handleAttendance(qrToken) {
         showLoading(true);
         try {
-            // Gunakan BASE_URL dari api.js/config.js
             const response = await fetch(`${BASE_URL}?path=presence/checkin`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    user_id: "20230001", // Sesuaikan dengan data login
+                    user_id: "20230001",
                     device_id: "dev-001",
                     course_id: document.getElementById('course-id').innerText || "cloud-101",
                     session_id: document.getElementById('session-id').innerText || "sesi-02",
@@ -65,7 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateStatusUI('error', data.message);
             }
         } catch (error) {
-            console.error("API Error:", error);
             updateStatusUI('error', "Gagal terhubung ke server");
         } finally {
             showLoading(false);
@@ -73,14 +67,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 3. Fungsi Stop Scan
     function stopStudentScanner() {
         QRScanner.stop();
         startBtn.classList.remove('hidden');
         stopBtn.classList.add('hidden');
     }
 
-    // 4. Update UI Status
     function updateStatusUI(state, message = "") {
         if (state === 'success') {
             attendanceStatus.className = "status-badge status-success";
@@ -93,12 +85,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Event Listeners
     if (startBtn) startBtn.addEventListener('click', startStudentScanner);
     if (stopBtn) stopBtn.addEventListener('click', stopStudentScanner);
 });
 
-// Helper Loading (Pastikan fungsi ini ada atau buat sederhana)
 function showLoading(show) {
     const loader = document.getElementById('loading');
     if (loader) {
