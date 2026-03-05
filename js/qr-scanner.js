@@ -43,16 +43,16 @@ const QRScanner = {
   },
   
   /**
-   * Request camera permission - PASTIKAN POPUP MUNCUL
+   * Request camera permission - dengan fallback ke user (depan)
    */
   async requestCameraPermission() {
     console.log('📷 Requesting camera permission...');
     
     try {
-      // Ini akan MEMAKSA popup permission muncul
+      // Coba minta akses kamera (akan coba belakang terlebih dahulu)
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
-          facingMode: 'environment',
+          facingMode: { ideal: 'environment' }, // Preferable tapi bukan required
           width: { ideal: 1280 },
           height: { ideal: 720 }
         },
@@ -67,15 +67,18 @@ const QRScanner = {
       return true;
       
     } catch (error) {
-      console.error('❌ Permission denied:', error.name);
+      console.error('❌ Permission request error:', error.name, error.message);
       
-      // Pesan error yang jelas
+      // Pesan error yang jelas dan actionable
       if (error.name === 'NotAllowedError') {
-        alert('❌ Izin kamera ditolak!\n\nSilakan buka pengaturan browser dan izinkan akses kamera untuk website ini.');
+        alert('❌ Izin kamera ditolak!\n\n📱 Cara mengaktifkan:\n1. Klik menu (3 garis) > Setelan\n2. Cari "Izin" atau "Permissions"\n3. Pilih Kamera > Izinkan\n4. Kembali ke aplikasi ini');
       } else if (error.name === 'NotFoundError') {
-        alert('❌ Kamera tidak ditemukan di perangkat ini.');
+        alert('❌ Tidak ada kamera di perangkat Anda.\n\nPastikan perangkat memiliki kamera yang berfungsi.');
       } else if (error.name === 'NotReadableError') {
-        alert('❌ Kamera sedang digunakan aplikasi lain.');
+        alert('❌ Kamera sedang digunakan aplikasi lain!\n\nTutup aplikasi lain yang menggunakan kamera terlebih dahulu.');
+      } else if (error.name === 'OverconstrainedError') {
+        console.log('📷 Fallback: Constraint tidak terpenuhi, coba lagi dengan constraint lebih fleksibel');
+        return true; // Return true untuk coba tetap lanjut
       } else {
         alert('❌ Gagal mengakses kamera: ' + error.message);
       }
@@ -106,7 +109,7 @@ const QRScanner = {
   },
   
   /**
-   * Start scanning
+   * Start scanning - dengan fallback kamera depan
    */
 async start({ cameraId = 'environment', fps = 10, qrbox = 250 } = {}) {
   if (!this.html5QrCode) {
@@ -116,18 +119,21 @@ async start({ cameraId = 'environment', fps = 10, qrbox = 250 } = {}) {
   
   if (this.isScanning) return true;
 
+  const config = {
+    fps: fps,
+    qrbox: { width: qrbox, height: qrbox },
+    aspectRatio: 1.0
+  };
+
   try {
     // Pastikan container benar-benar siap secara visual
     const container = document.getElementById(this.containerId);
     container.style.display = 'block';
     container.style.visibility = 'visible';
 
-    const config = {
-      fps: fps,
-      qrbox: { width: qrbox, height: qrbox },
-      aspectRatio: 1.0 // Tambahkan ini agar lebih stabil di mobile
-    };
-
+    // Coba dengan kamera yang diminta terlebih dahulu
+    console.log(`📷 Mencoba start scanner dengan: ${cameraId}`);
+    
     await this.html5QrCode.start(
       { facingMode: cameraId },
       config,
@@ -139,10 +145,42 @@ async start({ cameraId = 'environment', fps = 10, qrbox = 250 } = {}) {
     );
 
     this.isScanning = true;
+    console.log('✅ Scanner started dengan ' + cameraId);
     return true;
+    
   } catch (error) {
-    console.error('Kamera gagal:', error);
-    // Jika gagal kamera belakang, coba kamera depan tanpa syarat
+    console.error(`❌ Gagal dengan ${cameraId}:`, error);
+    
+    // FALLBACK: Jika environment gagal, coba dengan user (kamera depan)
+    if (cameraId === 'environment') {
+      console.log('📷 Fallback: Mencoba dengan kamera depan (user)...');
+      
+      try {
+        // Bersihkan instance sebelumnya yang gagal
+        this.html5QrCode = new Html5Qrcode(this.containerId);
+        
+        await this.html5QrCode.start(
+          { facingMode: 'user' }, // Paksa kamera depan
+          config,
+          (decodedText) => {
+            this.stop();
+            if (this.onScanSuccess) this.onScanSuccess(decodedText);
+          },
+          (errorMessage) => { /* ignore scan failures */ }
+        );
+
+        this.isScanning = true;
+        console.log('✅ Scanner started dengan kamera depan (user)');
+        alert('⚠️ Menggunakan kamera depan');
+        return true;
+        
+      } catch (fallbackError) {
+        console.error('❌ Fallback juga gagal:', fallbackError);
+        alert('❌ Tidak ada kamera yang tersedia. Pastikan:\n1. Kamera tersedia di perangkat\n2. Izin kamera sudah diberikan\n3. Kamera tidak digunakan aplikasi lain');
+        return false;
+      }
+    }
+    
     return false;
   }
 },

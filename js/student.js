@@ -63,9 +63,8 @@ const StudentDashboard = {
    * Start QR scanning
    */
 /**
- * Start QR scanning - FIXED dengan permission request
+ * Start QR scanning - dengan permission request
  */
-// Di student.js, perbarui fungsi startScanning
 async startScanning() {
   try {
     const qrReader = document.getElementById('qr-reader');
@@ -75,23 +74,31 @@ async startScanning() {
     // Minta izin kamera
     const granted = await QRScanner.requestCameraPermission();
     
-    if (!granted) return;
+    if (!granted) {
+      showToast('❌ Izin kamera ditolak. Tidak bisa melakukan scan.', 'error');
+      return;
+    }
 
     // Tampilkan tombol stop, sembunyikan tombol start
     document.getElementById('start-scan-btn').classList.add('hidden');
     document.getElementById('stop-scan-btn').classList.remove('hidden');
 
-    // Mulai scanner
-    const started = await QRScanner.start();
+    // Mulai scanner (akan auto fallback ke kamera depan jika perlu)
+    const started = await QRScanner.start({ cameraId: 'environment' });
     
-    if (!started) {
-       // Coba paksa pakai kamera depan jika environment gagal
-       await QRScanner.start({ cameraId: 'user' });
+    if (started) {
+      showToast('📷 Kamera aktif! Arahkan ke QR Code.', 'success');
+    } else {
+      showToast('❌ Gagal membuka kamera', 'error');
+      // Reset buttons jika gagal
+      document.getElementById('start-scan-btn').classList.remove('hidden');
+      document.getElementById('stop-scan-btn').classList.add('hidden');
     }
-    
-    showToast('📷 Kamera aktif!', 'success');
   } catch (err) {
     showToast('❌ Error: ' + err.message, 'error');
+    // Reset buttons
+    document.getElementById('start-scan-btn').classList.remove('hidden');
+    document.getElementById('stop-scan-btn').classList.add('hidden');
   }
 },
   
