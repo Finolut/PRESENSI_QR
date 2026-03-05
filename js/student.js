@@ -8,33 +8,43 @@ document.addEventListener('DOMContentLoaded', () => {
     const qrReaderContainer = document.getElementById('qr-reader');
     const attendanceStatus = document.getElementById('attendance-status');
 
-    async function startStudentScanner() {
-        // Membersihkan container sebelum memulai
-        qrReaderContainer.innerHTML = ""; 
-        
-        const isInit = QRScanner.init(
-            'qr-reader', 
-            async (decodedText) => {
-                await handleAttendance(decodedText);
-            },
-            (error) => {
-                console.error("Scan Error:", error);
-            }
-        );
+async function startStudentScanner() {
+    // 1. Bersihkan isi container agar tidak ada sisa elemen video sebelumnya
+    qrReaderContainer.innerHTML = ""; 
+    
+    const isInit = QRScanner.init(
+        'qr-reader', 
+        async (decodedText) => {
+            await handleAttendance(decodedText);
+        },
+        (error) => {
+            console.error("Scan Error:", error);
+        }
+    );
 
-        if (isInit) {
-            startBtn.classList.add('hidden');
-            stopBtn.classList.remove('hidden');
+    if (isInit) {
+        startBtn.classList.add('hidden');
+        stopBtn.classList.remove('hidden');
 
-            // PERUBAHAN DI SINI:
-            // Gunakan 'environment' untuk kamera belakang
+        try {
+            // 2. Gunakan konfigurasi yang lebih spesifik untuk memaksa kamera belakang
             await QRScanner.start({ 
-                cameraId: 'environment', 
+                // Menggunakan objek cameraId dengan facingMode exact agar browser tidak asal pilih
+                cameraId: { exact: "environment" }, 
+                fps: 10, 
+                qrbox: 250 
+            });
+        } catch (err) {
+            console.warn("Kamera belakang (exact) gagal, mencoba mode standar...");
+            // Fallback jika 'exact' tidak didukung (misal di PC/Laptop)
+            await QRScanner.start({ 
+                cameraId: "environment", 
                 fps: 10, 
                 qrbox: 250 
             });
         }
     }
+}
 
     async function handleAttendance(qrToken) {
         showLoading(true);
