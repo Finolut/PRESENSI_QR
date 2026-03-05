@@ -23,9 +23,16 @@ const StudentDashboard = {
    * Setup UI elements
    */
   setupUI() {
-    // Set user info
-    document.getElementById('student-name').textContent = this.currentUser.email.split('@')[0];
-    document.getElementById('student-nim').textContent = this.currentUser.user_id;
+    // Set user info with safety checks
+    if (this.currentUser) {
+      const userName = this.currentUser.email ? this.currentUser.email.split('@')[0] : 'User';
+      document.getElementById('student-name').textContent = userName;
+      document.getElementById('student-nim').textContent = this.currentUser.user_id || '-';
+      console.log('[v0] Student UI setup - User:', userName, 'ID:', this.currentUser.user_id);
+    } else {
+      console.warn('[v0] Current user is null/undefined');
+      return;
+    }
     
     // Set course info (could be dynamic)
     document.getElementById('course-id').textContent = this.course_id;
@@ -67,34 +74,59 @@ const StudentDashboard = {
  */
 async startScanning() {
   try {
-    // Tampilkan modal permission terlebih dahulu
+    console.log('[v0] Starting scan flow - showing permission modal');
     this.showCameraPermissionModal();
   } catch (err) {
-    showToast('❌ Error: ' + err.message, 'error');
+    showToast('Error: ' + err.message, 'error');
   }
 },
 
 /**
- * Tampilkan modal izin kamera
+ * Tampilkan modal izin kamera seperti browser dialog
  */
 showCameraPermissionModal() {
   const modal = document.getElementById('camera-permission-modal');
   const allowBtn = document.getElementById('camera-allow-btn');
-  const cancelBtn = document.getElementById('camera-cancel-btn');
+  const neverBtn = document.getElementById('camera-never-btn');
+  const closeBtn = document.getElementById('modal-close-btn');
+  const modalOverlay = modal.querySelector('.modal-overlay');
   
-  // Tampilkan modal
+  console.log('[v0] Permission modal showing');
   modal.classList.remove('hidden');
   
   // Handle allow button
   allowBtn.onclick = async () => {
+    console.log('[v0] User clicked allow');
     modal.classList.add('hidden');
     await this.requestCameraAndStart();
   };
   
-  // Handle cancel button
-  cancelBtn.onclick = () => {
+  // Handle never allow button
+  neverBtn.onclick = () => {
+    console.log('[v0] User clicked never allow');
+    modal.classList.add('hidden');
+    showToast('Akses kamera ditolak', 'error');
+  };
+  
+  // Handle close button
+  closeBtn.onclick = () => {
+    console.log('[v0] User closed modal');
     modal.classList.add('hidden');
   };
+  
+  // Handle overlay click (jangan tutup untuk menghindari accident)
+  modalOverlay.onclick = (e) => {
+    e.stopPropagation();
+  };
+  
+  // Handle Escape key
+  const handleEscape = (e) => {
+    if (e.key === 'Escape') {
+      modal.classList.add('hidden');
+      document.removeEventListener('keydown', handleEscape);
+    }
+  };
+  document.addEventListener('keydown', handleEscape);
 },
 
 /**
@@ -103,37 +135,33 @@ showCameraPermissionModal() {
 async requestCameraAndStart() {
   try {
     const qrReader = document.getElementById('qr-reader');
-    // Bersihkan isi container jika ada sisa scanner sebelumnya
-    qrReader.innerHTML = ''; 
+    qrReader.innerHTML = '';
     
-    // Minta izin kamera langsung ke browser
-    console.log('[v0] Requesting camera permission from browser...');
+    console.log('[v0] Requesting camera permission from browser');
     const granted = await QRScanner.requestCameraPermission();
     
     if (!granted) {
-      showToast('❌ Izin kamera ditolak. Tidak bisa melakukan scan.', 'error');
+      console.warn('[v0] Camera permission denied');
+      showToast('Izin kamera ditolak', 'error');
       return;
     }
 
-    // Tampilkan tombol stop, sembunyikan tombol start
     document.getElementById('start-scan-btn').classList.add('hidden');
     document.getElementById('stop-scan-btn').classList.remove('hidden');
 
-    // Mulai scanner (akan auto fallback ke kamera depan jika perlu)
-    console.log('[v0] Starting QR scanner...');
+    console.log('[v0] Starting QR scanner');
     const started = await QRScanner.start({ cameraId: 'environment' });
     
     if (started) {
-      showToast('📷 Kamera aktif! Arahkan ke QR Code.', 'success');
+      showToast('Kamera aktif! Arahkan ke QR Code', 'success');
     } else {
-      showToast('❌ Gagal membuka kamera', 'error');
-      // Reset buttons jika gagal
+      showToast('Gagal membuka kamera', 'error');
       document.getElementById('start-scan-btn').classList.remove('hidden');
       document.getElementById('stop-scan-btn').classList.add('hidden');
     }
   } catch (err) {
-    showToast('❌ Error: ' + err.message, 'error');
-    // Reset buttons
+    console.error('[v0] Error starting camera:', err);
+    showToast('Error: ' + err.message, 'error');
     document.getElementById('start-scan-btn').classList.remove('hidden');
     document.getElementById('stop-scan-btn').classList.add('hidden');
   }
