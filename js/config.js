@@ -3,7 +3,7 @@
  */
 const CONFIG = {
   // 🔗 Base URL Backend (Ganti dengan deployment ID Anda)
-  BASE_URL: 'https://script.google.com/macros/s/AKfycbxi9U-Fy-KBNtDDMZkpGCmAPNEpApeJh8q2kHLadbEi313CpOOPWpKHE35cwCJ-UBcS/exec',
+  BASE_URL: 'https://script.google.com/macros/s/AKfycbwV1hCkS1Wm65TvorJqXOGBJlgTAGkJV1aN4QuXltiBvKDpR05sv0ZwADjf6w17ETxB/exec',
   
   // 🎓 Default Course & Session (bisa diubah via UI)
   DEFAULT_COURSE_ID: 'cloud-101',
