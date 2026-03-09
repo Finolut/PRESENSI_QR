@@ -2,9 +2,8 @@
  * Konfigurasi Aplikasi
  */
 const CONFIG = {
-  // 🔗 Base URL Backend (Ganti dengan deployment ID Anda)
-  BASE_URL: 'https://script.google.com/macros/s/AKfycbxi9U-Fy-KBNtDDMZkpGCmAPNEpApeJh8q2kHLadbEi313CpOOPWpKHE35cwCJ-UBcS/exec',
-  
+// 🔗 Base URL Backend (PASTIKAN TANPA SPASI DI AKHIR!)
+BASE_URL: 'https://script.google.com/macros/s/AKfycbxi9U-Fy-KBNtDDMZkpGCmAPNEpApeJh8q2kHLadbEi313CpOOPWpKHE35cwCJ-UBcS/exec',
   // 🎓 Default Course & Session (bisa diubah via UI)
   DEFAULT_COURSE_ID: 'cloud-101',
   DEFAULT_SESSION_ID: 'sesi-02',
