@@ -199,13 +199,33 @@ if (queryString) {
   /**
    * Kirim batch accelerometer data
    */
-  async sendAccelerometer({ device_id, ts, samples }) {
+ async sendAccelerometer({ device_id, ts, samples }) {
     return this._post('/telemetry/accel', {
       device_id,
       ts: ts || new Date().toISOString(),
       samples
     });
   },
+
+  /**
+   * Mulai pembacaan sensor accelerometer dan kirim data ke backend
+   */
+  startAccelerometerUpdates(userId, sessionId, deviceId) {
+    if (window.DeviceMotionEvent) {
+      window.addEventListener('devicemotion', (event) => {
+        const { x, y, z } = event.accelerationIncludingGravity || event.acceleration;
+
+        this.sendAccelerometer({
+          device_id: deviceId,
+          samples: [{ x, y, z }],
+          ts: new Date().toISOString()
+        }).catch(error => console.error('Failed to send accelerometer data:', error));
+      }, false);
+    } else {
+      console.error('DeviceMotionEvent not supported in this browser.');
+    }
+  },
+
   
   /**
    * Ambil latest accelerometer data
