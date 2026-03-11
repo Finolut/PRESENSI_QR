@@ -1,316 +1,285 @@
+4
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#4285f4">
-  <meta name="description" content="Sistem Presensi QR Dinamis - Komputasi Awan">
-  <title>📱 Presensi QR</title>
-  
-  <!-- PWA Support -->
-  <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
-  
-  <!-- Styles -->
-  <link rel="stylesheet" href="css/styles.css">
-  
-  <!-- HTML5 QR Code Scanner -->
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Praktikum Komputasi Awan</title>
+    <!-- Use Inter font for modern look -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --secondary: #10B981;
+            --bg-body: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-main: #1F2937;
+            --text-muted: #6B7280;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Animated Background Pattern */
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: radial-gradient(#E5E7EB 1px, transparent 1px);
+            background-size: 20px 20px;
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), #8B5CF6);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+        }
+
+        header p {
+            margin-top: 15px;
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        main {
+            flex: 1;
+            padding: 40px 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: -20px;
+        }
+
+        .module-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .module-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s ease;
+        }
+
+        .module-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .module-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .card-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 20px;
+            background: rgba(79, 70, 229, 0.1);
+            color: var(--primary);
+        }
+
+        .m2-icon {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--secondary);
+        }
+
+        .module-card h2 {
+            margin: 0 0 10px 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .module-card p {
+            margin: 0;
+            color: var(--text-muted);
+            line-height: 1.6;
+            flex: 1;
+        }
+
+        .card-footer {
+            margin-top: 25px;
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .m2-footer {
+            color: var(--secondary);
+        }
+
+        .card-footer i {
+            margin-left: 8px;
+            transition: transform 0.2s;
+        }
+
+        .module-card:hover .card-footer i {
+            transform: translateX(4px);
+        }
+
+        .badges {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        .badge {
+            background: #EFF6FF;
+            color: #2563EB;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid #BFDBFE;
+        }
+
+        .badge-gas {
+            background: #ECFDF5;
+            color: #059669;
+            border-color: #A7F3D0;
+        }
+
+        footer {
+            text-align: center;
+            padding: 24px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            background: white;
+            border-top: 1px solid #E5E7EB;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 40px 20px;
+            }
+
+            header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
 </head>
+
 <body>
-  <!-- Loading Overlay -->
-  <div id="loading" class="overlay hidden">
-    <div class="spinner"></div>
-    <p>Memuat...</p>
-  </div>
+    <div class="bg-pattern"></div>
 
-  <!-- Toast Notification -->
-  <div id="toast" class="toast hidden"></div>
+    <header>
+        <h1>Praktikum Komputasi Awan</h1>
+        <p>Aplikasi berbasis web untuk mendukung kegiatan praktikum dengan integrasi Google Apps Script (GAS) dan Google
+            Sheets.</p>
+    </header>
 
-  <!-- Main Container -->
-  <main id="app" class="container">
-    
-    <!-- AUTH SECTION -->
-    <section id="auth-section" class="view active">
-      <div class="auth-card">
-        <div class="auth-header">
-          <h1>🎓 Presensi QR</h1>
-          <p>Komputasi Awan - Praktikum</p>
-        </div>
-        
-        <!-- Login Form -->
-        <form id="login-form" class="auth-form">
-          <div class="form-group">
-            <label for="login-email">Email</label>
-            <input type="email" id="login-email" required 
-                   placeholder="contoh: mahasiswa@univ.ac.id"
-                   pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$">
-          </div>
-          
-          <div class="form-group">
-            <label for="login-password">Password</label>
-            <input type="password" id="login-password" required 
-                   placeholder="Minimal 6 karakter" minlength="6">
-          </div>
-          
-          <button type="submit" class="btn btn-primary btn-full">
-            🔐 Login
-          </button>
-        </form>
-        
-        <!-- Register Toggle -->
-        <div class="auth-toggle">
-          <p>Belum punya akun? 
-            <a href="#" id="show-register">Daftar sebagai Mahasiswa</a>
-          </p>
-        </div>
-        
-        <!-- Register Form (Hidden by default) -->
-        <form id="register-form" class="auth-form hidden">
-          <div class="form-group">
-            <label for="register-name">Nama Lengkap</label>
-            <input type="text" id="register-name" required 
-                   placeholder="Nama sesuai KTM">
-          </div>
-          
-          <div class="form-group">
-            <label for="register-email">Email</label>
-            <input type="email" id="register-email" required 
-                   placeholder="contoh: nim@univ.ac.id"
-                   pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$">
-          </div>
-          
-          <div class="form-group">
-            <label for="register-password">Password</label>
-            <input type="password" id="register-password" required 
-                   placeholder="Minimal 6 karakter" minlength="6">
-          </div>
-          
-          <div class="form-group">
-            <label for="register-confirm">Konfirmasi Password</label>
-            <input type="password" id="register-confirm" required 
-                   placeholder="Ulangi password">
-          </div>
-          
-          <button type="submit" class="btn btn-success btn-full">
-            ✨ Daftar Sekarang
-          </button>
-        </form>
-        
-        <div class="auth-toggle">
-          <p>Sudah punya akun? 
-            <a href="#" id="show-login">Login</a>
-          </p>
-        </div>
-      </div>
-    </section>
+    <main>
+        <div class="cards-grid">
+            <!-- Modul 1 -->
+            <a href="./Modul 1 - Absensi QR/index.html" class="module-card">
+                <div class="badges">
+                    <span class="badge">Modul 1</span>
+                </div>
+                <div class="card-icon">
+                    <i class="fa-solid fa-qrcode"></i>
+                </div>
+                <h2>Sistem Presensi QR</h2>
+                <p>Aplikasi pemindaian QR Code (Scanner) dan penghasil QR Code dinamis untuk absensi kelas secara
+                    real-time.</p>
+                <div class="card-footer">
+                    Buka Aplikasi <i class="fa-solid fa-arrow-right"></i>
+                </div>
+            </a>
 
-    <!-- STUDENT DASHBOARD -->
-    <section id="student-dashboard" class="view hidden">
-      <header class="dashboard-header">
-        <div class="user-info">
-          <span class="avatar">👤</span>
-          <div>
-            <strong id="student-name">Nama Mahasiswa</strong>
-            <small id="student-nim" class="text-muted">NIM</small>
-          </div>
-        </div>
-        <button id="student-logout" class="btn btn-sm btn-outline">
-          Logout
-        </button>
-      </header>
+            <!-- Modul 2 -->
+            <a href="./Modul 2 - Accelerometer/index.html" class="module-card">
+                <div class="badges">
+                    <span class="badge badge-gas">Modul 2</span>
+                </div>
+                <div class="card-icon m2-icon">
+                    <i class="fa-solid fa-mobile-screen"></i>
+                </div>
+                <h2>Client Telemetry (Accelerometer)</h2>
+                <p>Membaca sensor gerak (X, Y, Z) dari Smartphone dan mengirimkannya ke server Cloud dalam format Batch
+                    Process.</p>
+                <div class="card-footer m2-footer">
+                    Buka Aplikasi <i class="fa-solid fa-arrow-right"></i>
+                </div>
+            </a>
 
-      <!-- Course Info -->
-      <div class="card course-card">
-        <h3>📚 Mata Kuliah Aktif</h3>
-        <div class="course-detail">
-          <p><strong>Kode:</strong> <span id="course-id">cloud-101</span></p>
-          <p><strong>Sesi:</strong> <span id="session-id">sesi-02</span></p>
-          <p><strong>Tanggal:</strong> <span id="session-date">-</span></p>
-        </div>
-      </div>
-
-      <!-- Attendance Status -->
-      <div class="card status-card" id="attendance-status-card">
-        <h3>📋 Status Presensi</h3>
-        <div id="attendance-status" class="status-badge status-pending">
-          ⏳ Belum Absen
-        </div>
-        <p class="status-hint" id="status-hint">
-          Scan QR Code yang ditampilkan dosen untuk melakukan check-in.
-        </p>
-      </div>
-
-      <!-- QR Scanner Section -->
-      <div class="card scanner-card" id="scanner-section">
-        <h3>📷 Scan QR Presensi</h3>
-        <p class="scanner-hint">Arahkan kamera ke QR Code di layar dosen</p>
-        
-         <div id="qr-reader" class="qr-reader" style="min-height: 300px;"></div>
-        
-        <button id="start-scan-btn" class="btn btn-primary btn-full">
-          🎯 Mulai Scan
-        </button>
-        <button id="stop-scan-btn" class="btn btn-outline btn-full hidden">
-          ⏹️ Berhenti Scan
-        </button>
-        
-        <div id="scan-result" class="scan-result hidden"></div>
-      </div>
-
-      <!-- History (Optional) -->
-      <div class="card history-card">
-        <h3>📜 Riwayat Presensi</h3>
-        <ul id="attendance-history" class="history-list">
-          <!-- Dynamic items -->
-        </ul>
-      </div>
-    </section>
-
-    <!-- LECTURER DASHBOARD -->
-    <section id="lecturer-dashboard" class="view hidden">
-      <header class="dashboard-header">
-        <div class="user-info">
-          <span class="avatar">👨‍🏫</span>
-          <div>
-            <strong id="lecturer-name">Nama Dosen</strong>
-            <small class="text-muted">Dosen Pengampu</small>
-          </div>
-        </div>
-        <button id="lecturer-logout" class="btn btn-sm btn-outline">
-          Logout
-        </button>
-      </header>
-
-      <!-- Panel 1: Create Session -->
-      <div class="card panel-card" id="create-session-panel">
-        <h3>🆕 Buat Sesi Presensi</h3>
-        <form id="session-form">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="course-id-input">Kode Mata Kuliah</label>
-              <input type="text" id="course-id-input" required 
-                     placeholder="contoh: cloud-101" value="cloud-101">
+            <!-- Modul 3 placeholder -->
+            <div class="module-card" style="opacity: 0.6; cursor: not-allowed;">
+                <div class="badges">
+                    <span class="badge" style="background: #F3F4F6; color: #6B7280; border-color: #D1D5DB;">Segera
+                        Hadir</span>
+                </div>
+                <div class="card-icon" style="background: #F3F4F6; color: #9CA3AF;">
+                    <i class="fa-solid fa-map-location-dot"></i>
+                </div>
+                <h2 style="color: #6B7280;">Modul 3 (GPS)</h2>
+                <p>Pelacakan lokasi (Global Positioning System) dan mapping data geospatial.</p>
+                <div class="card-footer" style="color: #9CA3AF;">
+                    Terkunci <i class="fa-solid fa-lock"></i>
+                </div>
             </div>
-            <div class="form-group">
-              <label for="session-id-input">ID Sesi</label>
-              <input type="text" id="session-id-input" required 
-                     placeholder="contoh: sesi-02" value="sesi-02">
-            </div>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label for="session-date">Tanggal</label>
-              <input type="date" id="session-date" required>
-            </div>
-            <div class="form-group">
-              <label for="session-time">Jam Mulai</label>
-              <input type="time" id="session-time" required>
-            </div>
-            <div class="form-group">
-              <label for="session-end">Jam Selesai</label>
-              <input type="time" id="session-end" required>
-            </div>
-          </div>
-          
-          <button type="submit" class="btn btn-primary btn-full">
-            🚀 Mulai Sesi Presensi
-          </button>
-        </form>
-      </div>
-
-      <!-- Panel 2: Active Session & QR Display -->
-      <div class="card panel-card hidden" id="active-session-panel">
-        <div class="session-header">
-          <h3>🔴 Sesi Aktif</h3>
-          <span id="session-timer" class="countdown">10</span>
         </div>
-        
-        <div class="qr-display">
-          <div id="qr-container" class="qr-container">
-            <div id="qr-code" class="qr-placeholder">
-              <p>QR akan muncul setelah sesi dimulai</p>
-            </div>
-          </div>
-          <p class="qr-hint">
-            QR berubah setiap <strong>10 detik</strong> untuk keamanan
-          </p>
-        </div>
-        
-        <div class="session-info">
-          <p><strong>Kursus:</strong> <span id="active-course-id">-</span></p>
-          <p><strong>Sesi:</strong> <span id="active-session-id">-</span></p>
-          <p><strong>Dimulai:</strong> <span id="active-start-time">-</span></p>
-        </div>
-      </div>
+    </main>
 
-<!-- Panel 3: Student List (2 Columns) -->
-<div class="card panel-card" id="student-list-panel">
-  <h3>👥 Daftar Mahasiswa <small class="text-muted" id="student-count">(0)</small></h3>
-  
-  <div class="search-box">
-    <input type="text" id="search-student" placeholder="Cari nama atau NIM...">
-  </div>
-  
-  <!-- ✅ 2 KOTAK: Belum Absen (Kiri) & Sudah Absen (Kanan) -->
-  <div class="student-columns">
-    
-    <!-- Kotak Kiri: Belum Absen -->
-    <div class="student-box box-pending">
-      <div class="box-header">
-        <span class="box-icon">⏳</span>
-        <strong>Belum Absen</strong>
-        <span class="box-count" id="count-pending">(0)</span>
-      </div>
-      <div class="student-list-scrollable" id="student-list-pending">
-        <div class="empty-state">
-          <p>Tidak ada mahasiswa belum absen.</p>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Kotak Kanan: Sudah Absen -->
-    <div class="student-box box-checked">
-      <div class="box-header">
-        <span class="box-icon">✅</span>
-        <strong>Sudah Absen</strong>
-        <span class="box-count" id="count-checked">(0)</span>
-      </div>
-      <div class="student-list-scrollable" id="student-list-checked">
-        <div class="empty-state">
-          <p>Belum ada mahasiswa yang absen.</p>
-        </div>
-      </div>
-    </div>
-    
-  </div>
-  
-  <button id="refresh-students" class="btn btn-sm btn-outline">
-    🔄 Refresh Daftar
-  </button>
-</div>
-
-      <!-- Panel 4: Close Session -->
-      <div class="card panel-card" id="close-session-panel">
-        <h3>⚠️ Akhiri Sesi</h3>
-        <p>Setelah ditutup, QR tidak akan generate lagi dan mahasiswa tidak bisa check-in.</p>
-        <button id="close-session-btn" class="btn btn-danger btn-full" disabled>
-          🔒 Tutup Sesi Presensi
-        </button>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- Config & Scripts -->
-  <script src="js/config.js"></script>
-  <script src="js/utils.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/qr-scanner.js"></script>
-  <script src="js/student.js"></script>
-  <script src="js/lecturer.js"></script>
-  <script src="js/app.js"></script>
+    <footer>
+        <p>&copy; 2026 Praktikum Komputasi Awan | Universitas Airlangga</p>
+    </footer>
 </body>
+
 </html>

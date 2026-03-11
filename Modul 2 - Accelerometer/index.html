@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modul 2 - Accelerometer (GAS Version)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #1a73e8;
+        }
+        .input-group {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        .input-group label {
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .input-group input {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .sensor-data {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            background: #e8f0fe;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .data-box {
+            text-align: center;
+            flex: 1;
+        }
+        .data-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1a73e8;
+            margin-top: 5px;
+        }
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn-start { background-color: #34a853; color: white; }
+        .btn-start:hover { background-color: #2b8c46; }
+        .btn-stop { background-color: #ea4335; color: white; }
+        .btn-stop:hover { background-color: #c53929; }
+        #status {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+            word-wrap: break-word;
+        }
+        .batch-indicator {
+            text-align: center;
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+        .alert {
+            background-color: #fef0f0;
+            color: #d93025;
+            padding: 10px;
+            border-left: 4px solid #d93025;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Kirim Accelerometer (Batch)</h1>
+    
+    <div class="alert">
+        <strong>PENTING:</strong> Masukkan URL Web App Google Apps Script Anda di kolom bawah sebelum memulai sesi.
+    </div>
+
+    <div class="input-group">
+        <label for="gas-url">Google Apps Script Web App URL</label>
+        <input type="url" id="gas-url" placeholder="https://script.google.com/macros/s/AKfyc.../exec" required>
+    </div>
+
+    <div class="input-group" style="flex-direction: row; gap: 10px;">
+        <div style="flex: 1;">
+            <label for="user-id">User ID</label>
+            <input type="text" id="user-id" placeholder="USR-123" value="USR-TEST" style="width: 100%; box-sizing: border-box;">
+        </div>
+        <div style="flex: 1;">
+            <label for="session-id">Session ID</label>
+            <input type="text" id="session-id" placeholder="SES-456" value="SES-TEST" style="width: 100%; box-sizing: border-box;">
+        </div>
+    </div>
+    
+    <div class="sensor-data">
+        <div class="data-box">
+            <div>X</div>
+            <div id="client-x" class="data-value">0.00</div>
+        </div>
+        <div class="data-box">
+            <div>Y</div>
+            <div id="client-y" class="data-value">0.00</div>
+        </div>
+        <div class="data-box">
+            <div>Z</div>
+            <div id="client-z" class="data-value">0.00</div>
+        </div>
+    </div>
+    
+    <div class="batch-indicator">Data tertunda di batch: <span id="batch-count">0</span>/10</div>
+
+    <div class="controls">
+        <button id="btn-start" class="btn-start">Mulai Sensor</button>
+        <button id="btn-stop" class="btn-stop" disabled>Berhenti</button>
+    </div>
+    
+    <div id="status">Status: Menunggu...</div>
+</div>
+
+<script>
+    // State Client
+    let isTracking = false;
+    let dataBatch = [];
+    let simulateInterval;
+
+    // Elements
+    const elGasUrl = document.getElementById('gas-url');
+    const elUserId = document.getElementById('user-id');
+    const elSessionId = document.getElementById('session-id');
+
+    const elClientX = document.getElementById('client-x');
+    const elClientY = document.getElementById('client-y');
+    const elClientZ = document.getElementById('client-z');
+    const elBatchCount = document.getElementById('batch-count');
+    const elStatus = document.getElementById('status');
+    const btnStart = document.getElementById('btn-start');
+    const btnStop = document.getElementById('btn-stop');
+
+    // Menerima data dari device accelerometer
+    function handleOrientation(event) {
+        if (!isTracking) return;
+
+        // Accelerometer tanpa gravitasi (pure acceleration) atau dengan gravitasi
+        const x = event.acceleration?.x || event.accelerationIncludingGravity?.x || 0;
+        const y = event.acceleration?.y || event.accelerationIncludingGravity?.y || 0;
+        const z = event.acceleration?.z || event.accelerationIncludingGravity?.z || 0;
+
+        updateClientUI(x, y, z);
+        processSensorData(x, y, z);
+    }
+
+    // Fungsi simulasi untuk mengetes dari Desktop (jika HP tidak ada sensor)
+    function simulateSensor() {
+        if (!isTracking) return;
+        const x = (Math.random() * 4 - 2).toFixed(2);
+        const y = (Math.random() * 4 - 2).toFixed(2);
+        const z = (9.8 + Math.random() * 2 - 1).toFixed(2); // asumsikan Z kena gravitasi
+        
+        updateClientUI(x, y, z);
+        processSensorData(x, y, z);
+    }
+
+    function updateClientUI(x, y, z) {
+        elClientX.textContent = parseFloat(x).toFixed(2);
+        elClientY.textContent = parseFloat(y).toFixed(2);
+        elClientZ.textContent = parseFloat(z).toFixed(2);
+    }
+
+    // Mengumpulkan data ke dalam batch
+    function processSensorData(x, y, z) {
+        // Ambil data user
+        const userId = elUserId.value || 'unknown';
+        const sessionId = elSessionId.value || 'unknown';
+        
+        // Generate a random device ID for this session
+        if(!window.sessionDeviceId) {
+            window.sessionDeviceId = 'DEV-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+        }
+
+        const payload = {
+            user_id: userId,
+            session_id: sessionId,
+            device_id: window.sessionDeviceId,
+            x_axis: parseFloat(x),
+            y_axis: parseFloat(y),
+            z_axis: parseFloat(z),
+            timestamp: new Date().toISOString()
+        };
+
+        dataBatch.push(payload);
+        elBatchCount.textContent = dataBatch.length;
+
+        // Kirim jika batch mencapai 10
+        if (dataBatch.length >= 10) {
+            sendBatchData([...dataBatch]);
+            dataBatch = []; // kosongkan batch
+            elBatchCount.textContent = 0;
+        }
+    }
+
+    // Mengirim ke GAS
+    async function sendBatchData(batch) {
+        const gasUrl = elGasUrl.value.trim();
+        if (!gasUrl) {
+            elStatus.textContent = 'Status: Error - URL GAS kosong!';
+            return;
+        }
+
+        // Tambahkan query parameter pathInfo agar routing doGet/doPost GAS menangkapnya
+        const targetUrl = gasUrl.includes('?') 
+            ? `${gasUrl}&pathInfo=telemetry/accel` 
+            : `${gasUrl}?pathInfo=telemetry/accel`;
+
+        try {
+            elStatus.textContent = `Status: Mengirim ${batch.length} data...`;
+            
+            // Note: GAS CORS require Content-Type text/plain to avoid Preflight OPTIONS issues
+            const response = await fetch(targetUrl, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'text/plain;charset=utf-8' 
+                },
+                body: JSON.stringify(batch)
+            });
+            
+            const result = await response.json();
+            
+            if(result.ok) {
+                elStatus.textContent = `Status: Sukses (${batch.length} data dikirim)`;
+            } else {
+                elStatus.textContent = `Status: Gagal - ${result.error}`;
+            }
+        } catch (error) {
+            console.error('Error sending data:', error);
+            elStatus.textContent = 'Status: Gagal mengirim data (Cek Console/URL)';
+        }
+    }
+
+    // Start tracking
+    btnStart.addEventListener('click', async () => {
+        if (!elGasUrl.value.trim()) {
+            alert('Tolong masukkan URL Web App Google Apps Script Anda terlebih dahulu.');
+            elGasUrl.focus();
+            return;
+        }
+
+        // Request permission on iOS 13+
+        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+            try {
+                const permission = await DeviceMotionEvent.requestPermission();
+                if (permission === 'granted') {
+                    window.addEventListener('devicemotion', handleOrientation);
+                    startTracking();
+                } else {
+                    alert('Izin sensor ditolak. Menggunakan data simulasi otomatis.');
+                    startSimulation();
+                }
+            } catch (error) {
+                console.error('Permission error:', error);
+                startSimulation();
+            }
+        } else if ('DeviceMotionEvent' in window) {
+            window.addEventListener('devicemotion', handleOrientation);
+            startTracking();
+        } else {
+            console.log("Accelerometer tidak didukung, menggunakan simulasi.");
+            startSimulation();
+        }
+    });
+
+    function startTracking() {
+        isTracking = true;
+        btnStart.disabled = true;
+        btnStop.disabled = false;
+        elGasUrl.disabled = true; // Kunci URL saat berjalan
+        elUserId.disabled = true;
+        elSessionId.disabled = true;
+        elStatus.textContent = 'Status: Mengambil data...';
+    }
+
+    function startSimulation() {
+        startTracking();
+        simulateInterval = setInterval(simulateSensor, 200); // 5 data per detik (simulasi lebih cepat untuk demo)
+    }
+
+    // Stop tracking
+    btnStop.addEventListener('click', () => {
+        isTracking = false;
+        btnStart.disabled = false;
+        btnStop.disabled = true;
+        elGasUrl.disabled = false;
+        elUserId.disabled = false;
+        elSessionId.disabled = false;
+        
+        // Kirim sisa data di batch jika ada
+        if (dataBatch.length > 0) {
+            sendBatchData([...dataBatch]);
+            dataBatch = [];
+            elBatchCount.textContent = 0;
+        }
+
+        window.removeEventListener('devicemotion', handleOrientation);
+        if (simulateInterval) clearInterval(simulateInterval);
+        elStatus.textContent = 'Status: Berhenti';
+    });
+</script>
+
+</body>
+</html>

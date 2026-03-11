@@ -1,0 +1,13 @@
+{
+  "name": "modul2-accelerometer",
+  "version": "1.0.0",
+  "description": "Modul 2 Praktikum Komputasi Awan - Accelerometer",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  }
+}

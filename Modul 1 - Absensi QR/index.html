@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#4285f4">
+  <meta name="description" content="Sistem Presensi QR Dinamis - Komputasi Awan">
+  <title>📱 Presensi QR</title>
+  
+  <!-- PWA Support -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+  
+  <!-- HTML5 QR Code Scanner -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div id="loading" class="overlay hidden">
+    <div class="spinner"></div>
+    <p>Memuat...</p>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Main Container -->
+  <main id="app" class="container">
+    
+    <!-- AUTH SECTION -->
+    <section id="auth-section" class="view active">
+      <div class="auth-card">
+        <div class="auth-header">
+          <h1>🎓 Presensi QR</h1>
+          <p>Komputasi Awan - Praktikum</p>
+        </div>
+        
+        <!-- Login Form -->
+        <form id="login-form" class="auth-form">
+          <div class="form-group">
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" required 
+                   placeholder="contoh: mahasiswa@univ.ac.id"
+                   pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$">
+          </div>
+          
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" required 
+                   placeholder="Minimal 6 karakter" minlength="6">
+          </div>
+          
+          <button type="submit" class="btn btn-primary btn-full">
+            🔐 Login
+          </button>
+        </form>
+        
+        <!-- Register Toggle -->
+        <div class="auth-toggle">
+          <p>Belum punya akun? 
+            <a href="#" id="show-register">Daftar sebagai Mahasiswa</a>
+          </p>
+        </div>
+        
+        <!-- Register Form (Hidden by default) -->
+        <form id="register-form" class="auth-form hidden">
+          <div class="form-group">
+            <label for="register-name">Nama Lengkap</label>
+            <input type="text" id="register-name" required 
+                   placeholder="Nama sesuai KTM">
+          </div>
+          
+          <div class="form-group">
+            <label for="register-email">Email</label>
+            <input type="email" id="register-email" required 
+                   placeholder="contoh: nim@univ.ac.id"
+                   pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$">
+          </div>
+          
+          <div class="form-group">
+            <label for="register-password">Password</label>
+            <input type="password" id="register-password" required 
+                   placeholder="Minimal 6 karakter" minlength="6">
+          </div>
+          
+          <div class="form-group">
+            <label for="register-confirm">Konfirmasi Password</label>
+            <input type="password" id="register-confirm" required 
+                   placeholder="Ulangi password">
+          </div>
+          
+          <button type="submit" class="btn btn-success btn-full">
+            ✨ Daftar Sekarang
+          </button>
+        </form>
+        
+        <div class="auth-toggle">
+          <p>Sudah punya akun? 
+            <a href="#" id="show-login">Login</a>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- STUDENT DASHBOARD -->
+    <section id="student-dashboard" class="view hidden">
+      <header class="dashboard-header">
+        <div class="user-info">
+          <span class="avatar">👤</span>
+          <div>
+            <strong id="student-name">Nama Mahasiswa</strong>
+            <small id="student-nim" class="text-muted">NIM</small>
+          </div>
+        </div>
+        <button id="student-logout" class="btn btn-sm btn-outline">
+          Logout
+        </button>
+      </header>
+
+      <!-- Course Info -->
+      <div class="card course-card">
+        <h3>📚 Mata Kuliah Aktif</h3>
+        <div class="course-detail">
+          <p><strong>Kode:</strong> <span id="course-id">cloud-101</span></p>
+          <p><strong>Sesi:</strong> <span id="session-id">sesi-02</span></p>
+          <p><strong>Tanggal:</strong> <span id="session-date">-</span></p>
+        </div>
+      </div>
+
+      <!-- Attendance Status -->
+      <div class="card status-card" id="attendance-status-card">
+        <h3>📋 Status Presensi</h3>
+        <div id="attendance-status" class="status-badge status-pending">
+          ⏳ Belum Absen
+        </div>
+        <p class="status-hint" id="status-hint">
+          Scan QR Code yang ditampilkan dosen untuk melakukan check-in.
+        </p>
+      </div>
+
+      <!-- QR Scanner Section -->
+      <div class="card scanner-card" id="scanner-section">
+        <h3>📷 Scan QR Presensi</h3>
+        <p class="scanner-hint">Arahkan kamera ke QR Code di layar dosen</p>
+        
+         <div id="qr-reader" class="qr-reader" style="min-height: 300px;"></div>
+        
+        <button id="start-scan-btn" class="btn btn-primary btn-full">
+          🎯 Mulai Scan
+        </button>
+        <button id="stop-scan-btn" class="btn btn-outline btn-full hidden">
+          ⏹️ Berhenti Scan
+        </button>
+        
+        <div id="scan-result" class="scan-result hidden"></div>
+      </div>
+
+      <!-- History (Optional) -->
+      <div class="card history-card">
+        <h3>📜 Riwayat Presensi</h3>
+        <ul id="attendance-history" class="history-list">
+          <!-- Dynamic items -->
+        </ul>
+      </div>
+    </section>
+
+    <!-- LECTURER DASHBOARD -->
+    <section id="lecturer-dashboard" class="view hidden">
+      <header class="dashboard-header">
+        <div class="user-info">
+          <span class="avatar">👨‍🏫</span>
+          <div>
+            <strong id="lecturer-name">Nama Dosen</strong>
+            <small class="text-muted">Dosen Pengampu</small>
+          </div>
+        </div>
+        <button id="lecturer-logout" class="btn btn-sm btn-outline">
+          Logout
+        </button>
+      </header>
+
+      <!-- Panel 1: Create Session -->
+      <div class="card panel-card" id="create-session-panel">
+        <h3>🆕 Buat Sesi Presensi</h3>
+        <form id="session-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="course-id-input">Kode Mata Kuliah</label>
+              <input type="text" id="course-id-input" required 
+                     placeholder="contoh: cloud-101" value="cloud-101">
+            </div>
+            <div class="form-group">
+              <label for="session-id-input">ID Sesi</label>
+              <input type="text" id="session-id-input" required 
+                     placeholder="contoh: sesi-02" value="sesi-02">
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="session-date">Tanggal</label>
+              <input type="date" id="session-date" required>
+            </div>
+            <div class="form-group">
+              <label for="session-time">Jam Mulai</label>
+              <input type="time" id="session-time" required>
+            </div>
+            <div class="form-group">
+              <label for="session-end">Jam Selesai</label>
+              <input type="time" id="session-end" required>
+            </div>
+          </div>
+          
+          <button type="submit" class="btn btn-primary btn-full">
+            🚀 Mulai Sesi Presensi
+          </button>
+        </form>
+      </div>
+
+      <!-- Panel 2: Active Session & QR Display -->
+      <div class="card panel-card hidden" id="active-session-panel">
+        <div class="session-header">
+          <h3>🔴 Sesi Aktif</h3>
+          <span id="session-timer" class="countdown">10</span>
+        </div>
+        
+        <div class="qr-display">
+          <div id="qr-container" class="qr-container">
+            <div id="qr-code" class="qr-placeholder">
+              <p>QR akan muncul setelah sesi dimulai</p>
+            </div>
+          </div>
+          <p class="qr-hint">
+            QR berubah setiap <strong>10 detik</strong> untuk keamanan
+          </p>
+        </div>
+        
+        <div class="session-info">
+          <p><strong>Kursus:</strong> <span id="active-course-id">-</span></p>
+          <p><strong>Sesi:</strong> <span id="active-session-id">-</span></p>
+          <p><strong>Dimulai:</strong> <span id="active-start-time">-</span></p>
+        </div>
+      </div>
+
+<!-- Panel 3: Student List (2 Columns) -->
+<div class="card panel-card" id="student-list-panel">
+  <h3>👥 Daftar Mahasiswa <small class="text-muted" id="student-count">(0)</small></h3>
+  
+  <div class="search-box">
+    <input type="text" id="search-student" placeholder="Cari nama atau NIM...">
+  </div>
+  
+  <!-- ✅ 2 KOTAK: Belum Absen (Kiri) & Sudah Absen (Kanan) -->
+  <div class="student-columns">
+    
+    <!-- Kotak Kiri: Belum Absen -->
+    <div class="student-box box-pending">
+      <div class="box-header">
+        <span class="box-icon">⏳</span>
+        <strong>Belum Absen</strong>
+        <span class="box-count" id="count-pending">(0)</span>
+      </div>
+      <div class="student-list-scrollable" id="student-list-pending">
+        <div class="empty-state">
+          <p>Tidak ada mahasiswa belum absen.</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Kotak Kanan: Sudah Absen -->
+    <div class="student-box box-checked">
+      <div class="box-header">
+        <span class="box-icon">✅</span>
+        <strong>Sudah Absen</strong>
+        <span class="box-count" id="count-checked">(0)</span>
+      </div>
+      <div class="student-list-scrollable" id="student-list-checked">
+        <div class="empty-state">
+          <p>Belum ada mahasiswa yang absen.</p>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+  
+  <button id="refresh-students" class="btn btn-sm btn-outline">
+    🔄 Refresh Daftar
+  </button>
+</div>
+
+      <!-- Panel 4: Close Session -->
+      <div class="card panel-card" id="close-session-panel">
+        <h3>⚠️ Akhiri Sesi</h3>
+        <p>Setelah ditutup, QR tidak akan generate lagi dan mahasiswa tidak bisa check-in.</p>
+        <button id="close-session-btn" class="btn btn-danger btn-full" disabled>
+          🔒 Tutup Sesi Presensi
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Config & Scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/qr-scanner.js"></script>
+  <script src="js/student.js"></script>
+  <script src="js/lecturer.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
