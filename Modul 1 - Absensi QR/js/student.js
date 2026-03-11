@@ -8,6 +8,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const qrReaderContainer = document.getElementById('qr-reader');
     const attendanceStatus = document.getElementById('attendance-status');
 
+    // -- ACCELEROMETER INTEGRATION (MODUL 2) --
+    let isAccelTracking = false;
+    let accelDataBatch = [];
+    let accelSimulateInterval = null;
+    let sessionDeviceId = 'DEV-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+    
+    // GAS URL dari Modul 2
+    const ACCEL_GAS_URL = "https://script.google.com/macros/s/AKfycbxi9U-Fy-KBNtDDMZkpGCmAPNEpApeJh8q2kHLadbEi313CpOOPWpKHE35cwCJ-UBcS/exec";
+
 async function startStudentScanner() {
     // 1. Bersihkan isi container agar tidak ada sisa elemen video sebelumnya
     qrReaderContainer.innerHTML = ""; 
@@ -71,6 +80,10 @@ async function handleAttendance(qrToken) {
         updateStatusUI('success');
         console.log('✅ Checkin success:', result);
         
+        // 🚀 MULAI INTEGRASI MODUL 2: START ACCELEROMETER DI BACKGROUND
+        console.log('🚀 Memulai pengiriman data Accelerometer di background...');
+        startAccelTracking(user.user_id?.trim(), session_id);
+        
     } catch (error) {
         console.error('❌ Checkin error:', error);
         
@@ -108,6 +121,106 @@ async function handleAttendance(qrToken) {
 
     if (startBtn) startBtn.addEventListener('click', startStudentScanner);
     if (stopBtn) stopBtn.addEventListener('click', stopStudentScanner);
+
+    // ==========================================
+    // FUNGSI BACKGROUND ACCELEROMETER (MODUL 2)
+    // ==========================================
+
+    async function startAccelTracking(userId, sessionId) {
+        if (isAccelTracking) return;
+        
+        // Request Permission
+        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+            try {
+                const permission = await DeviceMotionEvent.requestPermission();
+                if (permission === 'granted') {
+                    window.addEventListener('devicemotion', (e) => handleOrientation(e, userId, sessionId));
+                    isAccelTracking = true;
+                } else {
+                    console.log('Izin sensor ditolak. Pakai simulasi.');
+                    startAccelSimulation(userId, sessionId);
+                }
+            } catch (error) {
+                startAccelSimulation(userId, sessionId);
+            }
+        } else if ('DeviceMotionEvent' in window) {
+            window.addEventListener('devicemotion', (e) => handleOrientation(e, userId, sessionId));
+            isAccelTracking = true;
+        } else {
+            console.log("Accelerometer tidak didukung, pakai simulasi.");
+            startAccelSimulation(userId, sessionId);
+        }
+        
+        // Buat indikator visual kecil bahwa background tracking aktif
+        const statusBox = document.getElementById('attendance-status-card');
+        if (statusBox && !document.getElementById('accel-indicator')) {
+            const ind = document.createElement('div');
+            ind.id = 'accel-indicator';
+            ind.innerHTML = '<span style="font-size:12px; color:#10B981; margin-top:10px; display:block;">📡 Mengirim Telemetri Sensor...</span>';
+            statusBox.appendChild(ind);
+        }
+    }
+
+    function startAccelSimulation(userId, sessionId) {
+        isAccelTracking = true;
+        accelSimulateInterval = setInterval(() => {
+            if (!isAccelTracking) return;
+            const x = (Math.random() * 4 - 2).toFixed(2);
+            const y = (Math.random() * 4 - 2).toFixed(2);
+            const z = (9.8 + Math.random() * 2 - 1).toFixed(2); 
+            processAccelData(x, y, z, userId, sessionId);
+        }, 200); // 5 titik per detik (Berdasarkan modul 2)
+    }
+
+    function handleOrientation(event, userId, sessionId) {
+        if (!isAccelTracking) return;
+        const x = event.acceleration?.x || event.accelerationIncludingGravity?.x || 0;
+        const y = event.acceleration?.y || event.accelerationIncludingGravity?.y || 0;
+        const z = event.acceleration?.z || event.accelerationIncludingGravity?.z || 0;
+        processAccelData(x, y, z, userId, sessionId);
+    }
+
+    function processAccelData(x, y, z, userId, sessionId) {
+        const sample = {
+            t: new Date().toISOString(),
+            x: parseFloat(parseFloat(x).toFixed(2)),
+            y: parseFloat(parseFloat(y).toFixed(2)),
+            z: parseFloat(parseFloat(z).toFixed(2))
+        };
+        
+        accelDataBatch.push(sample);
+        
+        // Kirim jika batch mencapai 10
+        if (accelDataBatch.length >= 10) {
+            sendAccelBatch([...accelDataBatch], userId, sessionId);
+            accelDataBatch = [];
+        }
+    }
+
+    async function sendAccelBatch(samples, userId, sessionId) {
+        // Karena Modul 1 dan 2 menggunakan GAS yang sama, parameter tetap mengikuti struktur Modul 2
+        const targetUrl = `${ACCEL_GAS_URL}?pathInfo=telemetry/accel`;
+        
+        const payload = {
+            device_id: sessionDeviceId,
+            session_id: sessionId,
+            user_id: userId,
+            ts: new Date().toISOString(),
+            samples: samples
+        };
+
+        try {
+            await fetch(targetUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            });
+            console.log(`📡 [Background] Terkirim ${samples.length} titik accelerometer`);
+        } catch (err) {
+            console.error('Background Accel Error:', err);
+        }
+    }
+
 });
 
 function showLoading(show) {
