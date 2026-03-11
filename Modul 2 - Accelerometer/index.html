@@ -1,182 +1,328 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modul 2 - Accelerometer (GAS Version)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js for Bonus Feature -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --secondary: #10B981;
+            --bg-body: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-main: #1F2937;
+            --text-muted: #6B7280;
+            --danger: #EF4444;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f0f2f5;
-            color: #333;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
             margin: 0;
             padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
+
         .container {
-            background-color: #fff;
+            background-color: var(--card-bg);
             padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            max-width: 800px;
             width: 100%;
             margin-bottom: 20px;
+            box-sizing: border-box;
         }
+
         h1, h2 {
             text-align: center;
-            color: #1a73e8;
+            color: var(--primary);
+            margin-top: 0;
         }
+
+        .alert-info {
+            background-color: #EFF6FF;
+            color: #1D4ED8;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #3B82F6;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
         .input-group {
             margin-bottom: 15px;
             display: flex;
             flex-direction: column;
         }
+
         .input-group label {
-            margin-bottom: 5px;
+            margin-bottom: 6px;
             font-weight: 600;
             font-size: 14px;
         }
+
         .input-group input {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
+            padding: 10px 12px;
+            border: 1px solid #D1D5DB;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: monospace;
+            transition: border-color 0.2s;
         }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+
         .sensor-data {
             display: flex;
             justify-content: space-between;
             margin: 20px 0;
-            background: #e8f0fe;
-            padding: 15px;
-            border-radius: 8px;
+            background: #F8FAFC;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #E2E8F0;
         }
+
         .data-box {
             text-align: center;
             flex: 1;
         }
-        .data-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #1a73e8;
-            margin-top: 5px;
+
+        .data-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
         }
+
+        .data-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-top: 8px;
+            font-family: monospace;
+        }
+
         .controls {
             display: flex;
             gap: 15px;
             justify-content: center;
-            margin-top: 20px;
+            margin-top: 25px;
         }
+
         button {
-            padding: 10px 20px;
+            padding: 12px 24px;
             font-size: 16px;
+            font-weight: 600;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .btn-start { background-color: #34a853; color: white; }
-        .btn-start:hover { background-color: #2b8c46; }
-        .btn-stop { background-color: #ea4335; color: white; }
-        .btn-stop:hover { background-color: #c53929; }
-        #status {
-            text-align: center;
-            margin-top: 15px;
+
+        .btn-start { background-color: var(--secondary); color: white; }
+        .btn-start:hover { background-color: #059669; }
+        
+        .btn-stop { background-color: var(--danger); color: white; }
+        .btn-stop:hover { background-color: #DC2626; }
+        
+        .btn-fetch { background-color: var(--primary); color: white; width: 100%; justify-content: center; }
+        .btn-fetch:hover { background-color: var(--primary-hover); }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background-color: #9CA3AF !important;
+        }
+
+        .status-box {
+            background: #F3F4F6;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 20px;
             font-size: 14px;
-            color: #666;
+            font-family: monospace;
             word-wrap: break-word;
+            min-height: 40px;
         }
+
+        .status-ok { color: #059669; border-left: 3px solid #10B981; }
+        .status-err { color: #DC2626; border-left: 3px solid #EF4444; }
+        .status-wait { color: #6B7280; border-left: 3px solid #9CA3AF; }
+
         .batch-indicator {
             text-align: center;
-            font-size: 12px;
-            color: #888;
-            margin-top: 5px;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 10px;
+            font-weight: 500;
         }
-        .alert {
-            background-color: #fef0f0;
-            color: #d93025;
-            padding: 10px;
-            border-left: 4px solid #d93025;
-            margin-bottom: 20px;
-            font-size: 14px;
+
+        /* Chart constraints */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            background: #E0E7FF;
+            color: #4338CA;
+            margin-bottom: 10px;
+        }
+
+        hr { border: 0; height: 1px; background: #E5E7EB; margin: 30px 0; }
+        
+        .latest-info {
+            text-align: center;
+            font-size: 12px;
+            color: #6B7280;
+            margin-top: 15px;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Kirim Accelerometer (Batch)</h1>
-    
-    <div class="alert">
-        <strong>PENTING:</strong> Masukkan URL Web App Google Apps Script Anda di kolom bawah sebelum memulai sesi.
+    <div style="text-align: center;">
+        <span class="badge">🚀 Client Telemetry</span>
     </div>
+    <h1>Modul 2: Accelerometer</h1>
+    <p style="text-align: center; color: #6B7280; margin-bottom: 25px;">
+        Mengirim data batch sensor secara otomatis ke server.<br>
+        <strong>URL GAS Otomatis Disematkan</strong>
+    </p>
 
     <div class="input-group">
-        <label for="gas-url">Google Apps Script Web App URL</label>
-        <input type="url" id="gas-url" placeholder="https://script.google.com/macros/s/AKfyc.../exec" required>
-    </div>
-
-    <div class="input-group" style="flex-direction: row; gap: 10px;">
-        <div style="flex: 1;">
-            <label for="user-id">User ID</label>
-            <input type="text" id="user-id" placeholder="USR-123" value="USR-TEST" style="width: 100%; box-sizing: border-box;">
-        </div>
-        <div style="flex: 1;">
-            <label for="session-id">Session ID</label>
-            <input type="text" id="session-id" placeholder="SES-456" value="SES-TEST" style="width: 100%; box-sizing: border-box;">
-        </div>
+        <label for="device-id"><i class="fa-solid fa-mobile-screen"></i> Device ID</label>
+        <input type="text" id="device-id" required>
+        <div style="font-size: 12px; color: #6B7280; margin-top: 4px;">ID Unik Perangkat (Bisa diubah untuk simulasi testing)</div>
     </div>
     
     <div class="sensor-data">
         <div class="data-box">
-            <div>X</div>
-            <div id="client-x" class="data-value">0.00</div>
+            <div class="data-label">X-Axis</div>
+            <div id="val-x" class="data-value">0.00</div>
         </div>
         <div class="data-box">
-            <div>Y</div>
-            <div id="client-y" class="data-value">0.00</div>
+            <div class="data-label">Y-Axis</div>
+            <div id="val-y" class="data-value">0.00</div>
         </div>
         <div class="data-box">
-            <div>Z</div>
-            <div id="client-z" class="data-value">0.00</div>
+            <div class="data-label">Z-Axis</div>
+            <div id="val-z" class="data-value">0.00</div>
         </div>
     </div>
     
-    <div class="batch-indicator">Data tertunda di batch: <span id="batch-count">0</span>/10</div>
+    <div class="batch-indicator">
+        <i class="fa-solid fa-layer-group"></i> Data batch terkumpul: <span id="batch-count" style="font-weight:bold; color:var(--primary)">0</span>/10
+    </div>
 
     <div class="controls">
-        <button id="btn-start" class="btn-start">Mulai Sensor</button>
-        <button id="btn-stop" class="btn-stop" disabled>Berhenti</button>
+        <button id="btn-start" class="btn-start"><i class="fa-solid fa-play"></i> Mulai Sensor</button>
+        <button id="btn-stop" class="btn-stop" disabled><i class="fa-solid fa-stop"></i> Berhenti</button>
     </div>
     
-    <div id="status">Status: Menunggu...</div>
+    <div id="status-post" class="status-box status-wait">POST Status: Menunggu aksi...</div>
+</div>
+
+<div class="container">
+    <div style="text-align: center;">
+        <span class="badge" style="background:#ECFDF5; color:#059669;">📡 Monitor</span>
+    </div>
+    <h2>Data Terbaru (Latest)</h2>
+    
+    <button id="btn-fetch" class="btn-fetch"><i class="fa-solid fa-rotate-right"></i> GET /telemetry/accel/latest</button>
+
+    <div class="sensor-data" style="background: #F0FDF4; border-color: #BBF7D0;">
+        <div class="data-box">
+            <div class="data-label">Latest X</div>
+            <div id="latest-x" class="data-value">-</div>
+        </div>
+        <div class="data-box">
+            <div class="data-label">Latest Y</div>
+            <div id="latest-y" class="data-value">-</div>
+        </div>
+        <div class="data-box">
+            <div class="data-label">Latest Z</div>
+            <div id="latest-z" class="data-value">-</div>
+        </div>
+    </div>
+    
+    <div class="latest-info">Waktu Server: <span id="latest-time" style="font-weight:bold;">-</span></div>
+    
+    <div id="status-get" class="status-box status-wait">GET Status: Belum ada request</div>
+    
+    <hr>
+    
+    <h3 style="text-align: center; color: var(--text-main);"><i class="fa-solid fa-chart-line"></i> Grafik Realtime (Bonus)</h3>
+    <div class="chart-container">
+        <canvas id="accelChart"></canvas>
+    </div>
 </div>
 
 <script>
-    // State Client
+    // URL Web App GAS Hardcoded sesuai instruksi
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxi9U-Fy-KBNtDDMZkpGCmAPNEpApeJh8q2kHLadbEi313CpOOPWpKHE35cwCJ-UBcS/exec";
+    
+    // State
     let isTracking = false;
     let dataBatch = [];
     let simulateInterval;
+    let chart;
 
     // Elements
-    const elGasUrl = document.getElementById('gas-url');
-    const elUserId = document.getElementById('user-id');
-    const elSessionId = document.getElementById('session-id');
-
-    const elClientX = document.getElementById('client-x');
-    const elClientY = document.getElementById('client-y');
-    const elClientZ = document.getElementById('client-z');
+    const elDeviceId = document.getElementById('device-id');
+    const elValX = document.getElementById('val-x');
+    const elValY = document.getElementById('val-y');
+    const elValZ = document.getElementById('val-z');
     const elBatchCount = document.getElementById('batch-count');
-    const elStatus = document.getElementById('status');
+    
+    const elStatusPost = document.getElementById('status-post');
+    const elStatusGet = document.getElementById('status-get');
+    
     const btnStart = document.getElementById('btn-start');
     const btnStop = document.getElementById('btn-stop');
+    const btnFetch = document.getElementById('btn-fetch');
 
-    // Menerima data dari device accelerometer
+    const elLatestX = document.getElementById('latest-x');
+    const elLatestY = document.getElementById('latest-y');
+    const elLatestZ = document.getElementById('latest-z');
+    const elLatestTime = document.getElementById('latest-time');
+
+    // Inisialisasi Device ID
+    elDeviceId.value = 'dev-' + Math.random().toString(36).substr(2, 5).toLowerCase();
+
+    // -----------------------------------------------------
+    // LOGIC SENSOR & BATCHING
+    // -----------------------------------------------------
+
     function handleOrientation(event) {
         if (!isTracking) return;
 
-        // Accelerometer tanpa gravitasi (pure acceleration) atau dengan gravitasi
         const x = event.acceleration?.x || event.accelerationIncludingGravity?.x || 0;
         const y = event.acceleration?.y || event.accelerationIncludingGravity?.y || 0;
         const z = event.acceleration?.z || event.accelerationIncludingGravity?.z || 0;
@@ -185,102 +331,123 @@
         processSensorData(x, y, z);
     }
 
-    // Fungsi simulasi untuk mengetes dari Desktop (jika HP tidak ada sensor)
     function simulateSensor() {
         if (!isTracking) return;
         const x = (Math.random() * 4 - 2).toFixed(2);
         const y = (Math.random() * 4 - 2).toFixed(2);
-        const z = (9.8 + Math.random() * 2 - 1).toFixed(2); // asumsikan Z kena gravitasi
+        const z = (9.8 + Math.random() * 2 - 1).toFixed(2); 
         
         updateClientUI(x, y, z);
         processSensorData(x, y, z);
     }
 
     function updateClientUI(x, y, z) {
-        elClientX.textContent = parseFloat(x).toFixed(2);
-        elClientY.textContent = parseFloat(y).toFixed(2);
-        elClientZ.textContent = parseFloat(z).toFixed(2);
+        const pX = parseFloat(x).toFixed(2);
+        const pY = parseFloat(y).toFixed(2);
+        const pZ = parseFloat(z).toFixed(2);
+        
+        elValX.textContent = pX;
+        elValY.textContent = pY;
+        elValZ.textContent = pZ;
+        
+        // Update grafik secara langsung
+        updateChart(new Date().toLocaleTimeString(), pX, pY, pZ);
     }
 
-    // Mengumpulkan data ke dalam batch
     function processSensorData(x, y, z) {
-        // Ambil data user
-        const userId = elUserId.value || 'unknown';
-        const sessionId = elSessionId.value || 'unknown';
-        
-        // Generate a random device ID for this session
-        if(!window.sessionDeviceId) {
-            window.sessionDeviceId = 'DEV-' + Math.random().toString(36).substr(2, 6).toUpperCase();
-        }
-
-        const payload = {
-            user_id: userId,
-            session_id: sessionId,
-            device_id: window.sessionDeviceId,
-            x_axis: parseFloat(x),
-            y_axis: parseFloat(y),
-            z_axis: parseFloat(z),
-            timestamp: new Date().toISOString()
+        // Format object dalam batch (t, x, y, z) sesuai instruksi Modul 2
+        const sample = {
+            t: new Date().toISOString(),
+            x: parseFloat(parseFloat(x).toFixed(2)),
+            y: parseFloat(parseFloat(y).toFixed(2)),
+            z: parseFloat(parseFloat(z).toFixed(2))
         };
 
-        dataBatch.push(payload);
+        dataBatch.push(sample);
         elBatchCount.textContent = dataBatch.length;
 
-        // Kirim jika batch mencapai 10
+        // Kirim batch jika sudah 10 data (~2 detik jika 5 data/detik)
         if (dataBatch.length >= 10) {
             sendBatchData([...dataBatch]);
-            dataBatch = []; // kosongkan batch
+            dataBatch = []; // kosongkan
             elBatchCount.textContent = 0;
         }
     }
 
-    // Mengirim ke GAS
-    async function sendBatchData(batch) {
-        const gasUrl = elGasUrl.value.trim();
-        if (!gasUrl) {
-            elStatus.textContent = 'Status: Error - URL GAS kosong!';
-            return;
-        }
+    async function sendBatchData(samples) {
+        const deviceId = elDeviceId.value.trim();
+        const targetUrl = `${GAS_URL}?pathInfo=telemetry/accel`;
 
-        // Tambahkan query parameter pathInfo agar routing doGet/doPost GAS menangkapnya
-        const targetUrl = gasUrl.includes('?') 
-            ? `${gasUrl}&pathInfo=telemetry/accel` 
-            : `${gasUrl}?pathInfo=telemetry/accel`;
+        // Payload root sesuai instruksi Modul 2
+        const payload = {
+            device_id: deviceId,
+            ts: new Date().toISOString(),
+            samples: samples
+        };
 
         try {
-            elStatus.textContent = `Status: Mengirim ${batch.length} data...`;
+            updateStatus(elStatusPost, `Mengirim POST ${samples.length} data...`, 'wait');
             
-            // Note: GAS CORS require Content-Type text/plain to avoid Preflight OPTIONS issues
             const response = await fetch(targetUrl, {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'text/plain;charset=utf-8' 
-                },
-                body: JSON.stringify(batch)
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
             });
             
             const result = await response.json();
             
             if(result.ok) {
-                elStatus.textContent = `Status: Sukses (${batch.length} data dikirim)`;
+                updateStatus(elStatusPost, `[OK] Response: ${JSON.stringify(result)}`, 'ok');
             } else {
-                elStatus.textContent = `Status: Gagal - ${result.error}`;
+                updateStatus(elStatusPost, `[ERROR] ${JSON.stringify(result)}`, 'err');
             }
         } catch (error) {
-            console.error('Error sending data:', error);
-            elStatus.textContent = 'Status: Gagal mengirim data (Cek Console/URL)';
+            console.error('Network Error:', error);
+            updateStatus(elStatusPost, '[ERROR] Gagal mengirim data (Cek Konsole)', 'err');
         }
     }
 
-    // Start tracking
-    btnStart.addEventListener('click', async () => {
-        if (!elGasUrl.value.trim()) {
-            alert('Tolong masukkan URL Web App Google Apps Script Anda terlebih dahulu.');
-            elGasUrl.focus();
-            return;
-        }
+    // -----------------------------------------------------
+    // LOGIC REQUEST LATEST DATA (GET)
+    // -----------------------------------------------------
 
-        // Request permission on iOS 13+
+    btnFetch.addEventListener('click', async () => {
+        const deviceId = elDeviceId.value.trim();
+        const targetUrl = `${GAS_URL}?pathInfo=telemetry/accel/latest&device_id=${deviceId}`;
+
+        try {
+            updateStatus(elStatusGet, `Fetching GET latest for ${deviceId}...`, 'wait');
+            btnFetch.disabled = true;
+
+            const response = await fetch(targetUrl);
+            const result = await response.json();
+            
+            if (result.ok && result.data) {
+                const data = result.data;
+                elLatestX.textContent = (data.x || 0).toFixed(2);
+                elLatestY.textContent = (data.y || 0).toFixed(2);
+                elLatestZ.textContent = (data.z || 0).toFixed(2);
+                
+                const timeStr = data.t ? new Date(data.t).toLocaleTimeString() : '-';
+                elLatestTime.textContent = timeStr;
+                
+                updateStatus(elStatusGet, `[OK] Retrieved latest data`, 'ok');
+            } else {
+                updateStatus(elStatusGet, `[INFO] ${result.error || 'Data kosong/belum terkirim'}`, 'err');
+                elLatestX.textContent = '-'; elLatestY.textContent = '-'; elLatestZ.textContent = '-';
+            }
+        } catch (error) {
+            updateStatus(elStatusGet, '[ERROR] Koneksi gagal', 'err');
+        } finally {
+            btnFetch.disabled = false;
+        }
+    });
+
+    // -----------------------------------------------------
+    // EVENT LISTENERS & CHART INIT
+    // -----------------------------------------------------
+
+    btnStart.addEventListener('click', async () => {
         if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
             try {
                 const permission = await DeviceMotionEvent.requestPermission();
@@ -288,47 +455,26 @@
                     window.addEventListener('devicemotion', handleOrientation);
                     startTracking();
                 } else {
-                    alert('Izin sensor ditolak. Menggunakan data simulasi otomatis.');
+                    alert('Izin ditolak. Menggunakan simulasi.');
                     startSimulation();
                 }
             } catch (error) {
-                console.error('Permission error:', error);
                 startSimulation();
             }
         } else if ('DeviceMotionEvent' in window) {
             window.addEventListener('devicemotion', handleOrientation);
             startTracking();
         } else {
-            console.log("Accelerometer tidak didukung, menggunakan simulasi.");
             startSimulation();
         }
     });
 
-    function startTracking() {
-        isTracking = true;
-        btnStart.disabled = true;
-        btnStop.disabled = false;
-        elGasUrl.disabled = true; // Kunci URL saat berjalan
-        elUserId.disabled = true;
-        elSessionId.disabled = true;
-        elStatus.textContent = 'Status: Mengambil data...';
-    }
-
-    function startSimulation() {
-        startTracking();
-        simulateInterval = setInterval(simulateSensor, 200); // 5 data per detik (simulasi lebih cepat untuk demo)
-    }
-
-    // Stop tracking
     btnStop.addEventListener('click', () => {
         isTracking = false;
         btnStart.disabled = false;
         btnStop.disabled = true;
-        elGasUrl.disabled = false;
-        elUserId.disabled = false;
-        elSessionId.disabled = false;
+        elDeviceId.disabled = false;
         
-        // Kirim sisa data di batch jika ada
         if (dataBatch.length > 0) {
             sendBatchData([...dataBatch]);
             dataBatch = [];
@@ -337,8 +483,72 @@
 
         window.removeEventListener('devicemotion', handleOrientation);
         if (simulateInterval) clearInterval(simulateInterval);
-        elStatus.textContent = 'Status: Berhenti';
+        updateStatus(elStatusPost, 'Sensor berhenti. Sisa batch terkirim.', 'wait');
     });
+
+    function startTracking() {
+        isTracking = true;
+        btnStart.disabled = true;
+        btnStop.disabled = false;
+        elDeviceId.disabled = true;
+        initChart(); // Reset chart when starting
+        updateStatus(elStatusPost, 'Mulai mengumpulkan batch data...', 'wait');
+    }
+
+    function startSimulation() {
+        startTracking();
+        simulateInterval = setInterval(simulateSensor, 200); // 5 data per detik
+    }
+
+    function updateStatus(el, text, type) {
+        el.textContent = text;
+        el.className = `status-box status-${type}`;
+    }
+
+    // Chart.js Setup for Bonus Feature
+    function initChart() {
+        const ctx = document.getElementById('accelChart').getContext('2d');
+        if (chart) chart.destroy();
+        
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'X', borderColor: 'rgb(239, 68, 68)', data: [], tension: 0.3 },
+                    { label: 'Y', borderColor: 'rgb(16, 185, 129)', data: [], tension: 0.3 },
+                    { label: 'Z', borderColor: 'rgb(59, 130, 246)', data: [], tension: 0.3 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { min: -15, max: 15 } // Jangkauan akselerasi umum
+                },
+                animation: { duration: 0 }
+            }
+        });
+    }
+
+    function updateChart(timeLabel, x, y, z) {
+        if (!chart) return;
+        
+        // Simpan max 30 titik agar tidak berat
+        if (chart.data.labels.length > 30) {
+            chart.data.labels.shift();
+            chart.data.datasets.forEach(ds => ds.data.shift());
+        }
+        
+        chart.data.labels.push(timeLabel);
+        chart.data.datasets[0].data.push(x);
+        chart.data.datasets[1].data.push(y);
+        chart.data.datasets[2].data.push(z);
+        chart.update();
+    }
+
+    // Initialize blank chart on load
+    initChart();
 </script>
 
 </body>
