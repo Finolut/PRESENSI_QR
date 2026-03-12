@@ -8,11 +8,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const qrReaderContainer = document.getElementById('qr-reader');
     const attendanceStatus = document.getElementById('attendance-status');
 
-    // -- ACCELEROMETER INTEGRATION (MODUL 2) --
+    // -- DEVICE ID & ACCEL INTEGRATION (MODUL 2, 3) --
     let isAccelTracking = false;
     let accelDataBatch = [];
     let accelSimulateInterval = null;
-    let sessionDeviceId = 'DEV-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+    
+    // Inisialisasi Device ID persisten satu kali
+    let sessionDeviceId = localStorage.getItem('PRESQR_DEVICE_ID');
+    if (!sessionDeviceId) {
+        sessionDeviceId = 'DEV-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+        localStorage.setItem('PRESQR_DEVICE_ID', sessionDeviceId);
+    }
     
     // GAS URL dari Modul 2
     const ACCEL_GAS_URL = "https://script.google.com/macros/s/AKfycbxi9U-Fy-KBNtDDMZkpGCmAPNEpApeJh8q2kHLadbEi313CpOOPWpKHE35cwCJ-UBcS/exec";
@@ -74,7 +80,7 @@ async function handleAttendance(qrToken) {
         // ✅ Gunakan API wrapper yang sudah benar (dari api.js)
         const result = await API.checkin({
             user_id: user.user_id?.trim(),           // ✅ dari session + trim
-            device_id: (navigator.userAgent || 'web-client').trim(),
+            device_id: sessionDeviceId,              // ✅ Gunakan ID unik yang konsisten di modul 1,2,3
             course_id: course_id,
             session_id: session_id,
             qr_token: qrToken.trim(),                // ✅ trim token dari scanner

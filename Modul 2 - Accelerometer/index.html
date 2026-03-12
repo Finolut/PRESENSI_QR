@@ -308,8 +308,13 @@
     const elLatestZ = document.getElementById('latest-z');
     const elLatestTime = document.getElementById('latest-time');
 
-    // Inisialisasi Device ID
-    elDeviceId.value = 'dev-' + Math.random().toString(36).substr(2, 5).toLowerCase();
+    // Inisialisasi Device ID persisten satu kali (agar sama dengan Modul lainnya)
+    let sessionDeviceId = localStorage.getItem('PRESQR_DEVICE_ID');
+    if (!sessionDeviceId) {
+        sessionDeviceId = 'DEV-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+        localStorage.setItem('PRESQR_DEVICE_ID', sessionDeviceId);
+    }
+    elDeviceId.value = sessionDeviceId;
 
     // -----------------------------------------------------
     // LOGIC SENSOR & BATCHING

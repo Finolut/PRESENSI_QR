@@ -298,8 +298,13 @@
     const btnStop = document.getElementById('btn-stop');
     const btnFetch = document.getElementById('btn-fetch');
 
-    // Inisialisasi Device ID yang sama dengan modul lain
-    elDeviceId.value = 'DEV-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+    // Inisialisasi Device ID persisten satu kali (agar sama dengan Modul lainnya)
+    let sessionDeviceId = localStorage.getItem('PRESQR_DEVICE_ID');
+    if (!sessionDeviceId) {
+        sessionDeviceId = 'DEV-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+        localStorage.setItem('PRESQR_DEVICE_ID', sessionDeviceId);
+    }
+    elDeviceId.value = sessionDeviceId;
 
     // -----------------------------------------------------
     // MAP INITIALIZATION (LEAFLET.JS)
