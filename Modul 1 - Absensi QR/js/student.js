@@ -89,6 +89,10 @@ async function handleAttendance(qrToken) {
         console.log('🛑 Absen berhasil, menghentikan pengiriman data Accelerometer...');
         stopAccelTracking();
         
+        // 🗺️ KIRIM TITIK KOORDINAT GPS (MODUL 3)
+        console.log('🗺️ Mencoba mendapatkan dan mengirim koordinat lokasi GPS...');
+        sendGPSLocation(user.user_id?.trim(), sessionDeviceId);
+        
     } catch (error) {
         console.error('❌ Checkin error:', error);
         
@@ -246,10 +250,65 @@ async function handleAttendance(qrToken) {
             accelDataBatch = [];
         }
         
-        // Hapus indikator visual
         const ind = document.getElementById('accel-indicator');
         if (ind) ind.remove();
         console.log('🛑 Sensor accelerometer dihentikan.');
+    }
+
+    // ==========================================
+    // FUNGSI LOKASI GPS (MODUL 3 INTEGRASI)
+    // ==========================================
+    
+    function sendGPSLocation(userId, deviceId) {
+        if (!navigator.geolocation) {
+            console.warn('Geolocation tidak didukung di browser ini.');
+            return;
+        }
+
+        // Indikator UI
+        const statusBox = document.getElementById('attendance-status-card');
+        let gpsInd = document.getElementById('gps-indicator');
+        if (statusBox && !gpsInd) {
+            gpsInd = document.createElement('div');
+            gpsInd.id = 'gps-indicator';
+            gpsInd.innerHTML = '<span style="font-size:12px; color:#F59E0B; margin-top:5px; display:block;">🗺️ Menentukan Lokasi Peta...</span>';
+            statusBox.appendChild(gpsInd);
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const acc = position.coords.accuracy;
+
+                const targetUrl = `${ACCEL_GAS_URL}?pathInfo=telemetry/gps`;
+                const payload = {
+                    device_id: deviceId, // Gunakan deviceId session yang sama dengan accelerometer
+                    ts: new Date().toISOString(),
+                    lat: parseFloat(lat.toFixed(5)),
+                    lng: parseFloat(lng.toFixed(5)),
+                    accuracy_m: Math.round(acc)
+                };
+
+                try {
+                    await fetch(targetUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify(payload)
+                    });
+                    console.log(`🗺️ [GPS] Berhasil merekam koordinat di map: Lat ${payload.lat}, Lng ${payload.lng}`);
+                    if(gpsInd) gpsInd.innerHTML = '<span style="font-size:12px; color:#10B981; margin-top:5px; display:block;">📍 Lokasi Presensi Terkunci!</span>';
+                } catch (err) {
+                    console.error('Koneksi GPS ke server Error:', err);
+                    if(gpsInd) gpsInd.remove();
+                }
+            },
+            (error) => {
+                console.warn('Gagal membaca lokasi GPS:', error.message);
+                if(gpsInd) gpsInd.innerHTML = '<span style="font-size:12px; color:#EF4444; margin-top:5px; display:block;">⚠️ Gagal mendapatkan akses lokasi</span>';
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
     }
 
 });

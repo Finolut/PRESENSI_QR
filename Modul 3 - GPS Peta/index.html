@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modul 3 - GPS Telemetry (GAS Version)</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --secondary: #10B981;
+            --bg-body: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-main: #1F2937;
+            --text-muted: #6B7280;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 25px 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            max-width: 900px;
+            width: 100%;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: var(--primary);
+            margin-top: 0;
+            font-size: 1.5rem;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .input-row .input-group {
+            flex: 1;
+        }
+
+        .input-group input {
+            padding: 10px 12px;
+            border: 1px solid #D1D5DB;
+            border-radius: 8px;
+            font-size: 15px;
+            font-family: monospace;
+            transition: border-color 0.2s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+
+        .sensor-data {
+            display: flex;
+            justify-content: space-between;
+            margin: 15px 0;
+            background: #F8FAFC;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #E2E8F0;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .data-box {
+            text-align: center;
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .data-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .data-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-top: 6px;
+            font-family: monospace;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 140px;
+            justify-content: center;
+        }
+
+        .btn-start { background-color: var(--secondary); color: white; }
+        .btn-start:hover { background-color: #059669; }
+        .btn-stop { background-color: var(--danger); color: white; }
+        .btn-stop:hover { background-color: #DC2626; }
+        .btn-fetch { background-color: var(--primary); color: white; }
+        .btn-fetch:hover { background-color: var(--primary-hover); }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background-color: #9CA3AF !important;
+        }
+
+        .status-box {
+            background: #F3F4F6;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 13px;
+            font-family: monospace;
+            word-wrap: break-word;
+            min-height: 20px;
+            text-align: center;
+        }
+
+        .status-ok { color: #059669; border-left: 3px solid #10B981; }
+        .status-err { color: #DC2626; border-left: 3px solid #EF4444; }
+        .status-wait { color: #6B7280; border-left: 3px solid #9CA3AF; }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            background: #E0E7FF;
+            color: #4338CA;
+            margin-bottom: 10px;
+        }
+        
+        #map {
+            height: 400px;
+            width: 100%;
+            border-radius: 12px;
+            margin-top: 15px;
+            border: 2px solid #E5E7EB;
+            z-index: 1; /* Fix Leaflet z-index issue */
+        }
+
+        .map-legend {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            font-size: 13px;
+            margin-top: 10px;
+            color: var(--text-muted);
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .circle-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div style="text-align: center;">
+        <span class="badge">📍 Peta & Sensor Lokasi</span>
+    </div>
+    <h1>Modul 3: GPS Telemetry</h1>
+    <p style="text-align: center; color: #6B7280; margin-bottom: 25px; font-size: 14px;">
+        Visualisasi lokasi Anda saat ini (Marker) dan Jejak Perjalanan (Polyline) di atas Peta Interaktif.
+    </p>
+
+    <div class="input-row">
+        <div class="input-group">
+            <label for="device-id"><i class="fa-solid fa-mobile-screen"></i> Device ID</label>
+            <input type="text" id="device-id" required>
+        </div>
+        <div class="input-group">
+            <label for="limit-history"><i class="fa-solid fa-list-ol"></i> Limit Riwayat</label>
+            <input type="number" id="limit-history" value="200" min="10" max="1000">
+        </div>
+    </div>
+    
+    <div class="sensor-data" id="client-data-box">
+        <div class="data-box">
+            <div class="data-label">Latitude</div>
+            <div id="val-lat" class="data-value">-</div>
+        </div>
+        <div class="data-box">
+            <div class="data-label">Longitude</div>
+            <div id="val-lng" class="data-value">-</div>
+        </div>
+        <div class="data-box">
+            <div class="data-label">Akurasi (M)</div>
+            <div id="val-acc" class="data-value">-</div>
+        </div>
+    </div>
+
+    <!-- Map Container -->
+    <div id="map"></div>
+    <div class="map-legend">
+        <div class="legend-item"><span class="circle-color" style="background:#dc2626;"></span> Marker (Latest)</div>
+        <div class="legend-item"><span class="circle-color" style="background:#3b82f6;"></span> Polyline (History)</div>
+    </div>
+
+    <div class="controls">
+        <button id="btn-start" class="btn-start"><i class="fa-solid fa-location-crosshairs"></i> Mulai Lacak Lokasi</button>
+        <button id="btn-stop" class="btn-stop" disabled><i class="fa-solid fa-stop"></i> Berhenti</button>
+        <button id="btn-fetch" class="btn-fetch"><i class="fa-solid fa-map-location-dot"></i> Refresh Peta (GET)</button>
+    </div>
+    
+    <div id="status-sys" class="status-box status-wait">Sistem siap. Tekan Mulai Lacak Lokasi untuk merekam.</div>
+</div>
+
+<!-- Scripts -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+    // URL Web App GAS Hardcoded sesuai instruksi
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxi9U-Fy-KBNtDDMZkpGCmAPNEpApeJh8q2kHLadbEi313CpOOPWpKHE35cwCJ-UBcS/exec";
+    
+    // State Variables
+    let watchId = null;
+    let map = null;
+    let marker = null;
+    let polyline = null;
+    let isTracking = false;
+
+    // Elements
+    const elDeviceId = document.getElementById('device-id');
+    const elLimit = document.getElementById('limit-history');
+    const elValLat = document.getElementById('val-lat');
+    const elValLng = document.getElementById('val-lng');
+    const elValAcc = document.getElementById('val-acc');
+    const elStatusSys = document.getElementById('status-sys');
+    
+    const btnStart = document.getElementById('btn-start');
+    const btnStop = document.getElementById('btn-stop');
+    const btnFetch = document.getElementById('btn-fetch');
+
+    // Inisialisasi Device ID yang sama dengan modul lain
+    elDeviceId.value = 'DEV-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+
+    // -----------------------------------------------------
+    // MAP INITIALIZATION (LEAFLET.JS)
+    // -----------------------------------------------------
+    function initMap() {
+        // Default center ke ITS Surabaya / Surabaya pusat
+        map = L.map('map').setView([-7.2575, 112.7521], 13);
+        
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors',
+            maxZoom: 19
+        }).addTo(map);
+        
+        // Icon marker merah khusus Latest
+        const redIcon = new L.Icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
+        marker = L.marker([-7.2575, 112.7521], {icon: redIcon}).addTo(map);
+        marker.bindPopup("<b>Posisi Terakhir</b><br>Belum ada data.");
+        
+        // Polyline jalan berwarna biru
+        polyline = L.polyline([], {color: '#3b82f6', weight: 4}).addTo(map);
+    }
+
+    // Panggil saat dimuat
+    initMap();
+
+    // -----------------------------------------------------
+    // LOGIC SENSOR GPS & POST
+    // -----------------------------------------------------
+
+    btnStart.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+            alert('Geolokasi tidak didukung oleh browser Anda.');
+            return;
+        }
+
+        btnStart.disabled = true;
+        btnStop.disabled = false;
+        isTracking = true;
+        updateStatus(elStatusSys, 'Meminta izin GPS dan mencari satelit...', 'wait');
+
+        // Gunakan watchPosition untuk melacak pergerakan real-time
+        watchId = navigator.geolocation.watchPosition(
+            handlePositionSuccess,
+            handlePositionError,
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+    });
+
+    btnStop.addEventListener('click', () => {
+        if (watchId) {
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+        }
+        isTracking = false;
+        btnStart.disabled = false;
+        btnStop.disabled = true;
+        updateStatus(elStatusSys, 'Pelacakan GPS dihentikan secara manual.', 'ok');
+    });
+
+    async function handlePositionSuccess(position) {
+        if(!isTracking) return;
+
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const acc = position.coords.accuracy;
+        const ts = new Date().toISOString();
+
+        // Update Text UI
+        elValLat.textContent = lat.toFixed(5);
+        elValLng.textContent = lng.toFixed(5);
+        elValAcc.textContent = Math.round(acc);
+        
+        // Auto Update Map Lokal agar mulus (sementara menunggu server)
+        const newLatLng = new L.LatLng(lat, lng);
+        marker.setLatLng(newLatLng);
+        polyline.addLatLng(newLatLng);
+        map.panTo(newLatLng);
+
+        // POST Data ke Server
+        const deviceId = elDeviceId.value.trim();
+        const payload = {
+            device_id: deviceId,
+            ts: ts,
+            lat: lat,
+            lng: lng,
+            accuracy_m: Math.round(acc)
+        };
+
+        try {
+            updateStatus(elStatusSys, `Mengirim koordinat POST... (${lat.toFixed(3)}, ${lng.toFixed(3)})`, 'wait');
+            
+            await fetch(`${GAS_URL}?pathInfo=telemetry/gps`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            });
+            
+            updateStatus(elStatusSys, `[OK] Koordinat berhasil diamankan di Cloud!`, 'ok');
+        } catch (error) {
+            updateStatus(elStatusSys, '[ERROR] Gagal mengirim GPS ke Cloud.', 'err');
+        }
+    }
+
+    function handlePositionError(error) {
+        let msg = '';
+        switch(error.code) {
+            case error.PERMISSION_DENIED: msg = "User menolak permintaan Geolocation."; break;
+            case error.POSITION_UNAVAILABLE: msg = "Informasi lokasi tidak tersedia/GPS mati."; break;
+            case error.TIMEOUT: msg = "Request mendapatkan lokasi timeout."; break;
+            default: msg = "Terjadi error GPS yang tidak diketahui."; break;
+        }
+        updateStatus(elStatusSys, `[GPS ERROR] ${msg}`, 'err');
+        
+        // Reset buttons jika permission ditolak
+        if(error.code === error.PERMISSION_DENIED) {
+            btnStop.click(); 
+        }
+    }
+
+    // -----------------------------------------------------
+    // LOGIC REQUEST MAP (GET LATEST + GET HISTORY)
+    // -----------------------------------------------------
+
+    btnFetch.addEventListener('click', async () => {
+        const deviceId = elDeviceId.value.trim();
+        const limit = elLimit.value || 200;
+        
+        btnFetch.disabled = true;
+        updateStatus(elStatusSys, 'Mengunduh Historis Peta dan Marker terbaru...', 'wait');
+
+        try {
+            // Kita Fetch History (untuk Polyline)
+            const urlHistory = `${GAS_URL}?pathInfo=telemetry/gps/history&device_id=${deviceId}&limit=${limit}`;
+            const resHist = await fetch(urlHistory);
+            const resultH = await resHist.json();
+
+            if (resultH.ok && resultH.data && resultH.data.items && resultH.data.items.length > 0) {
+                // Gambar ulang titik jejak merah
+                const items = resultH.data.items;
+                const latlngs = items.map(pt => [pt.lat, pt.lng]);
+                
+                polyline.setLatLngs(latlngs);
+                
+                // Ambil titik terakhir dari array history sebagai Marker (seperti GET latest)
+                const latest = items[items.length - 1]; // items terakhir di array (terbaru)
+                const letLatLng = new L.LatLng(latest.lat, latest.lng);
+                
+                marker.setLatLng(letLatLng);
+                marker.bindPopup(`<b>Waktu:</b> ${new Date(latest.ts).toLocaleTimeString()}<br><b>Akurasi:</b> ${latest.accuracy_m || '-'} M`).openPopup();
+                
+                // Auto Zoom ke marker terakhir dan perkecil view agar terlihat semua line
+                map.fitBounds(polyline.getBounds(), {padding: [50, 50]});
+
+                updateStatus(elStatusSys, `[OK] Berhasil menggambar ${items.length} riwayat jejak di Peta.`, 'ok');
+            } else {
+                updateStatus(elStatusSys, `[INFO] Belum ada perjalanan direkam untuk Device ID ini.`, 'err');
+            }
+        } catch (error) {
+            updateStatus(elStatusSys, `[ERROR] Gagal menarik data peta: ${error.message}`, 'err');
+        } finally {
+            btnFetch.disabled = false;
+        }
+    });
+
+    function updateStatus(el, text, type) {
+        el.textContent = text;
+        el.className = `status-box status-${type}`;
+    }
+</script>
+
+</body>
+</html>
