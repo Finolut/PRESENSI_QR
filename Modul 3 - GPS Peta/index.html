@@ -396,16 +396,19 @@
         map.panTo(newLatLng);
 
         // POST Data ke Server
-        const deviceId = elDeviceId.value.trim();
-        const payload = {
-            device_id: deviceId,
-            ts: ts,
-            lat: lat,
-            lng: lng,
-            accuracy_m: Math.round(acc)
-        };
+                
+                // Ambil data user dari login session yang ditanam di localhost (jika ada)
+                const userLoginData = JSON.parse(localStorage.getItem('PRESQR_USER') || '{}');
+                const userId = userLoginData.user_id || 'unknown_user_UI';
 
-        try {
+                const payload = {
+                    device_id: elDeviceId.value,
+                    user_id: userId,
+                    ts: new Date().toISOString(),
+                    lat: parseFloat(lat.toFixed(5)),
+                    lng: parseFloat(lng.toFixed(5)),
+                    accuracy_m: Math.round(acc)
+                };    try {
             updateStatus(elStatusSys, `Mengirim koordinat POST... (${lat.toFixed(3)}, ${lng.toFixed(3)})`, 'wait');
             
             await fetch(`${GAS_URL}?pathInfo=telemetry/gps`, {
