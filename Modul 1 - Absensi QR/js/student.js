@@ -311,9 +311,9 @@ async function handleAttendance(qrToken) {
             },
             (error) => {
                 console.warn('Gagal membaca lokasi GPS:', error.message);
-                if(gpsInd) gpsInd.innerHTML = '<span style="font-size:12px; color:#EF4444; margin-top:5px; display:block;">⚠️ Gagal mendapatkan akses lokasi</span>';
+                if(gpsInd) gpsInd.innerHTML = '<span style="font-size:12px; color:#EF4444; margin-top:5px; display:block;">⚠️ Gagal (Timeout/GPS Error). Coba cari sinyal lapang.</span>';
             },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            { enableHighAccuracy: true, timeout: 30000, maximumAge: 10000 }
         );
     }
 
