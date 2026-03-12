@@ -21,6 +21,11 @@ async function startStudentScanner() {
     // 1. Bersihkan isi container agar tidak ada sisa elemen video sebelumnya
     qrReaderContainer.innerHTML = ""; 
     
+    // 🚀 MULAI ACCELEROMETER SAAT KAMERA DIBUKA
+    const user = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.USER) || '{}');
+    const session_id = (document.getElementById('session-id')?.innerText || 'default_session').trim();
+    startAccelTracking(user.user_id?.trim(), session_id);
+    
     const isInit = QRScanner.init(
         'qr-reader', 
         async (decodedText) => {
@@ -80,9 +85,9 @@ async function handleAttendance(qrToken) {
         updateStatusUI('success');
         console.log('✅ Checkin success:', result);
         
-        // 🚀 MULAI INTEGRASI MODUL 2: START ACCELEROMETER DI BACKGROUND
-        console.log('🚀 Memulai pengiriman data Accelerometer di background...');
-        startAccelTracking(user.user_id?.trim(), session_id);
+        // 🛑 BERHENTIKAN ACCELEROMETER SETELAH ABSEN BERHASIL
+        console.log('🛑 Absen berhasil, menghentikan pengiriman data Accelerometer...');
+        stopAccelTracking();
         
     } catch (error) {
         console.error('❌ Checkin error:', error);
@@ -105,6 +110,9 @@ async function handleAttendance(qrToken) {
         QRScanner.stop();
         startBtn.classList.remove('hidden');
         stopBtn.classList.add('hidden');
+        
+        // Berhentikan accelerometer jika user menekan tombol Berhenti secara manual
+        stopAccelTracking();
     }
 
     function updateStatusUI(state, message = "") {
@@ -219,6 +227,29 @@ async function handleAttendance(qrToken) {
         } catch (err) {
             console.error('Background Accel Error:', err);
         }
+    }
+
+    function stopAccelTracking() {
+        if (!isAccelTracking) return;
+        isAccelTracking = false;
+        
+        if (accelSimulateInterval) {
+            clearInterval(accelSimulateInterval);
+            accelSimulateInterval = null;
+        }
+        
+        // Kirim sisa data jika ada
+        if (accelDataBatch.length > 0) {
+            const user = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.USER) || '{}');
+            const session_id = (document.getElementById('session-id')?.innerText || 'default_session').trim();
+            sendAccelBatch([...accelDataBatch], user.user_id?.trim(), session_id);
+            accelDataBatch = [];
+        }
+        
+        // Hapus indikator visual
+        const ind = document.getElementById('accel-indicator');
+        if (ind) ind.remove();
+        console.log('🛑 Sensor accelerometer dihentikan.');
     }
 
 });

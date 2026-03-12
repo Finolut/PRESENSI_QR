@@ -255,24 +255,18 @@
     </div>
     <h2>Data Terbaru (Latest)</h2>
     
-    <button id="btn-fetch" class="btn-fetch"><i class="fa-solid fa-rotate-right"></i> GET /telemetry/accel/latest</button>
+    <button id="btn-fetch" class="btn-fetch"><i class="fa-solid fa-rotate-right"></i> GET Riwayat /telemetry/accel/latest</button>
 
     <div class="sensor-data" style="background: #F0FDF4; border-color: #BBF7D0;">
-        <div class="data-box">
-            <div class="data-label">Latest X</div>
+        <div class="data-box" style="flex:1;">
+            <div class="data-label">Total Data Tercatat</div>
             <div id="latest-x" class="data-value">-</div>
         </div>
-        <div class="data-box">
-            <div class="data-label">Latest Y</div>
-            <div id="latest-y" class="data-value">-</div>
-        </div>
-        <div class="data-box">
-            <div class="data-label">Latest Z</div>
-            <div id="latest-z" class="data-value">-</div>
+        <div class="data-box" style="flex:2;">
+            <div class="data-label">Waktu Catatan Terakhir</div>
+            <div id="latest-time" class="data-value" style="font-size: 16px;">-</div>
         </div>
     </div>
-    
-    <div class="latest-info">Waktu Server: <span id="latest-time" style="font-weight:bold;">-</span></div>
     
     <div id="status-get" class="status-box status-wait">GET Status: Belum ada request</div>
     
@@ -293,6 +287,7 @@
     let dataBatch = [];
     let simulateInterval;
     let chart;
+    let lastSensorReadTime = 0; // Untuk mengatur interval 2 detik di sensor real
 
     // Elements
     const elDeviceId = document.getElementById('device-id');
@@ -322,6 +317,11 @@
 
     function handleOrientation(event) {
         if (!isTracking) return;
+        
+        // Membatasi pengambilan data menjadi setiap 2 detik (2000ms)
+        const now = Date.now();
+        if (now - lastSensorReadTime < 2000) return;
+        lastSensorReadTime = now;
 
         const x = event.acceleration?.x || event.accelerationIncludingGravity?.x || 0;
         const y = event.acceleration?.y || event.accelerationIncludingGravity?.y || 0;
@@ -346,12 +346,12 @@
         const pY = parseFloat(y).toFixed(2);
         const pZ = parseFloat(z).toFixed(2);
         
-        elValX.textContent = pX;
-        elValY.textContent = pY;
-        elValZ.textContent = pZ;
-        
-        // Update grafik secara langsung
-        updateChart(new Date().toLocaleTimeString(), pX, pY, pZ);
+        let elX = document.getElementById('val-x');
+        let elY = document.getElementById('val-y');
+        let elZ = document.getElementById('val-z');
+        if(elX) elX.textContent = pX;
+        if(elY) elY.textContent = pY;
+        if(elZ) elZ.textContent = pZ;
     }
 
     function processSensorData(x, y, z) {
@@ -366,11 +366,11 @@
         dataBatch.push(sample);
         elBatchCount.textContent = dataBatch.length;
 
-        // Kirim batch jika sudah 10 data (~2 detik jika 5 data/detik)
-        if (dataBatch.length >= 10) {
+        // Kirim batch jika sudah ada 3 data (~6 detik karena 1 data/2detik)
+        if (dataBatch.length >= 3) {
             sendBatchData([...dataBatch]);
             dataBatch = []; // kosongkan
-            elBatchCount.textContent = 0;
+            if(elBatchCount) elBatchCount.textContent = 0;
         }
     }
 
@@ -423,18 +423,32 @@
             const result = await response.json();
             
             if (result.ok && result.data) {
-                const data = result.data;
-                elLatestX.textContent = (data.x || 0).toFixed(2);
-                elLatestY.textContent = (data.y || 0).toFixed(2);
-                elLatestZ.textContent = (data.z || 0).toFixed(2);
+                // Modifikasi script GAS selanjutnya akan mengembalikan array data jika device di fetch
+                const historyData = Array.isArray(result.data) ? result.data : [result.data];
                 
-                const timeStr = data.t ? new Date(data.t).toLocaleTimeString() : '-';
-                elLatestTime.textContent = timeStr;
+                let elLatestX = document.getElementById('latest-x');
+                let elLatestTime = document.getElementById('latest-time');
+                if(elLatestX) elLatestX.textContent = historyData.length + " Titik";
                 
-                updateStatus(elStatusGet, `[OK] Retrieved latest data`, 'ok');
+                // Set waktu ke waktu titik terakhir
+                const lastIdx = historyData.length - 1;
+                const timeStr = historyData[lastIdx] && historyData[lastIdx].t ? new Date(historyData[lastIdx].t).toLocaleString() : '-';
+                if(elLatestTime) elLatestTime.textContent = timeStr;
+                
+                // Bersihkan & Render ulang Chart dari awal berdasarkan history array
+                initChart(); 
+                
+                historyData.forEach(pt => {
+                    const tLabel = new Date(pt.t).toLocaleTimeString();
+                    updateChart(tLabel, pt.x, pt.y, pt.z, true); // true = abaikan batasan geser 30 agar history terlihat semua
+                });
+                chart.update(); // Update keseluruhan grafik setelah render selesai
+                
+                updateStatus(elStatusGet, `[OK] Retrieved ${historyData.length} historis data`, 'ok');
             } else {
                 updateStatus(elStatusGet, `[INFO] ${result.error || 'Data kosong/belum terkirim'}`, 'err');
-                elLatestX.textContent = '-'; elLatestY.textContent = '-'; elLatestZ.textContent = '-';
+                let elX = document.getElementById('latest-x');
+                if(elX) elX.textContent = '0';
             }
         } catch (error) {
             updateStatus(elStatusGet, '[ERROR] Koneksi gagal', 'err');
@@ -497,7 +511,7 @@
 
     function startSimulation() {
         startTracking();
-        simulateInterval = setInterval(simulateSensor, 200); // 5 data per detik
+        simulateInterval = setInterval(simulateSensor, 2000); // 1 data per 2 detik
     }
 
     function updateStatus(el, text, type) {
@@ -531,11 +545,12 @@
         });
     }
 
-    function updateChart(timeLabel, x, y, z) {
+    function updateChart(timeLabel, x, y, z, ignoreShift = false) {
         if (!chart) return;
         
-        // Simpan max 30 titik agar tidak berat
-        if (chart.data.labels.length > 30) {
+        // Cuma buang titik lama jika bukan gambar dari history 
+        // Titik maksimal jika lagi real-time biarkan 50
+        if (!ignoreShift && chart.data.labels.length > 50) {
             chart.data.labels.shift();
             chart.data.datasets.forEach(ds => ds.data.shift());
         }
@@ -544,7 +559,8 @@
         chart.data.datasets[0].data.push(x);
         chart.data.datasets[1].data.push(y);
         chart.data.datasets[2].data.push(z);
-        chart.update();
+        
+        if(!ignoreShift) chart.update(); // auto update buat real-time
     }
 
     // Initialize blank chart on load
