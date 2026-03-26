@@ -290,7 +290,8 @@ async function handleAttendance(qrToken) {
                 const targetUrl = `${ACCEL_GAS_URL}?pathInfo=telemetry/gps`;
                 const payload = {
                     device_id: deviceId, // Gunakan deviceId session yang sama dengan accelerometer
-                    user_id: user.user_id || 'unknown_user_UI', 
+                    user_id: userId || 'unknown_user_UI', 
+                    session_id: (document.getElementById('session-id')?.innerText || 'default_session').trim(),
                     ts: new Date().toISOString(),
                     lat: parseFloat(lat.toFixed(5)),
                     lng: parseFloat(lng.toFixed(5)),

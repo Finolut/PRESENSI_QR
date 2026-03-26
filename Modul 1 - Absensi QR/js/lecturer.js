@@ -315,7 +315,10 @@ renderStudentList(students) {
            data-user-id="${student.user_id}">
         <div class="student-info">
           <div class="student-name">${escapeHtml(student.name)}</div>
-          <div class="student-nim">${escapeHtml(student.user_id)}</div>
+          <div class="student-nim">
+             ${escapeHtml(student.user_id)}
+             ${student.lat && student.lng ? `<a href="https://maps.google.com/?q=${student.lat},${student.lng}" target="_blank" style="margin-left:8px; font-size:12px; color:#3b82f6; text-decoration:none;">📍 Lihat Lokasi</a>` : ''}
+          </div>
         </div>
         <span class="student-status">
           ${student.status === 'checked_in' ? '✓ Absen' : '⏳ Belum'}
