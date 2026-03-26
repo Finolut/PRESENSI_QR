@@ -103,6 +103,32 @@ function handleGetLatestAccelerometer(e) {
   return errorResponse('data_not_found_for_device');
 }
 
+function handleGetSessionAccelerometer(e) {
+  const session_id = e.parameter.session_id;
+  if (!session_id) return errorResponse('missing_parameter: session_id');
+  
+  const sheet = getSheet(SHEETS.ACCELEROMETER);
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return successResponse([]);
+  
+  const headers = data[0];
+  const sIdx = headers.indexOf('session_id');
+  const sessionData = [];
+  
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][sIdx]) === String(session_id)) {
+      sessionData.push({
+        user_id: data[i][headers.indexOf('user_id')],
+        t: data[i][headers.indexOf('timestamp')],
+        x: data[i][headers.indexOf('x_axis')] || 0,
+        y: data[i][headers.indexOf('y_axis')] || 0,
+        z: data[i][headers.indexOf('z_axis')] || 0
+      });
+    }
+  }
+  return successResponse(sessionData);
+}
+
 // ============================================
 // TELEMETRY MODULE - GPS (MODUL 3)
 // ============================================
@@ -258,6 +284,7 @@ function doGet(e) {
     if (path === '/presence/history') return handleGetAttendanceHistory(e);
     
     if (path === '/telemetry/accel/latest') return handleGetLatestAccelerometer(e);
+    if (path === '/telemetry/accel/session') return handleGetSessionAccelerometer(e);
     if (path === '/telemetry/gps/history') return handleGetGPSHistory(e);
     
     return errorResponse('endpoint_not_found');
