@@ -293,7 +293,7 @@
                     // Cek jika dataset untuk mahasiswa ini sudah ada atau belum
                     if (activeDatasets[uid] === undefined) {
                         const newDs = {
-                            label: uid, // Idealnya kita map dengan nama asli, tapi UID/NIM lebih unik di dataset
+                            label: latestPerUser[uid].name || uid,
                             borderColor: colorPalette[Object.keys(activeDatasets).length % colorPalette.length],
                             backgroundColor: colorPalette[Object.keys(activeDatasets).length % colorPalette.length],
                             data: new Array(labelsArray.length - 1).fill(null), // Pad titik masa lalu dengan null

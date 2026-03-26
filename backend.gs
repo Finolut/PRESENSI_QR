@@ -111,14 +111,29 @@ function handleGetSessionAccelerometer(e) {
   const data = sheet.getDataRange().getValues();
   if (data.length <= 1) return successResponse([]);
   
+  // Ambil users sheet untuk mapping nama
+  const usersSheet = getSheet(SHEETS.USERS);
+  const usersData = usersSheet.getDataRange().getValues();
+  const userNameMap = {};
+  if (usersData.length > 1) {
+    const uHeaders = usersData[0];
+    const uIdIdx = uHeaders.indexOf('user_id');
+    const uNameIdx = uHeaders.indexOf('name');
+    for (let i = 1; i < usersData.length; i++) {
+      userNameMap[String(usersData[i][uIdIdx])] = String(usersData[i][uNameIdx]);
+    }
+  }
+  
   const headers = data[0];
   const sIdx = headers.indexOf('session_id');
   const sessionData = [];
   
   for (let i = 1; i < data.length; i++) {
     if (String(data[i][sIdx]) === String(session_id)) {
+      const uId = String(data[i][headers.indexOf('user_id')]);
       sessionData.push({
-        user_id: data[i][headers.indexOf('user_id')],
+        user_id: uId,
+        name: userNameMap[uId] || uId,
         t: data[i][headers.indexOf('timestamp')],
         x: data[i][headers.indexOf('x_axis')] || 0,
         y: data[i][headers.indexOf('y_axis')] || 0,
