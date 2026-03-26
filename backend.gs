@@ -253,6 +253,7 @@ function doGet(e) {
     if (path === '/presence/status') return handleGetPresenceStatus(e);
     if (path === '/presence/list') return handleGetPresenceList(e);
     if (path === '/presence/session/active') return handleGetActiveSession(e);
+    if (path === '/presence/session/all') return handleGetAllSessions(e);
     if (path === '/schedule/weekly') return handleGetWeeklySchedule(e);
     if (path === '/presence/history') return handleGetAttendanceHistory(e);
     
@@ -389,6 +390,26 @@ function handleGetActiveSession(e) {
     session_internal_id: session.rowData[session.headers.indexOf('session_internal_id')],
     course_id: course_id, session_id: session_id, is_active: true
   });
+}
+
+function handleGetAllSessions(e) {
+  const sheet = getSheet(SHEETS.SESSIONS);
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return successResponse([]);
+  
+  const headers = data[0];
+  const sessions = [];
+  
+  for (let i = 1; i < data.length; i++) {
+    sessions.push({
+      session_internal_id: data[i][headers.indexOf('session_internal_id')],
+      course_id: data[i][headers.indexOf('course_id')],
+      session_id: data[i][headers.indexOf('session_id')],
+      tanggal: data[i][headers.indexOf('tanggal')],
+      is_active: data[i][headers.indexOf('is_active')]
+    });
+  }
+  return successResponse(sessions);
 }
 
 function handleGenerateQr(body) {
