@@ -3,25 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modul 3 - Peta Presensi Sesi</title>
+    <title>Modul 3 - GPS Tracker Murni</title>
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 
     <style>
         :root {
-            --primary: #4F46E5;
-            --primary-hover: #4338CA;
-            --bg-body: #F3F4F6;
+            --primary: #2563EB;
+            --primary-hover: #1D4ED8;
+            --danger: #DC2626;
+            --danger-hover: #B91C1C;
+            --bg-body: #F1F5F9;
             --card-bg: #FFFFFF;
-            --text-main: #1F2937;
-            --text-muted: #6B7280;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
         }
 
         body {
@@ -37,9 +37,9 @@
 
         .container {
             background-color: var(--card-bg);
-            padding: 25px 30px;
+            padding: 25px max(30px, 4vw);
             border-radius: 16px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
             max-width: 900px;
             width: 100%;
             margin-bottom: 20px;
@@ -65,29 +65,29 @@
             font-size: 14px;
         }
 
-        .input-group select {
+        .input-group input {
             padding: 10px 12px;
-            border: 1px solid #D1D5DB;
+            border: 1px solid #CBD5E1;
             border-radius: 8px;
             font-size: 15px;
             background: #fff;
             transition: border-color 0.2s;
-            cursor: pointer;
         }
 
-        .input-group select:focus {
+        .input-group input:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
         }
 
         .controls {
             display: flex;
-            justify-content: center;
+            gap: 10px;
             margin-top: 15px;
         }
 
         button {
+            flex: 1;
             padding: 12px 24px;
             font-size: 15px;
             font-weight: 600;
@@ -97,23 +97,24 @@
             transition: all 0.2s;
             display: flex;
             align-items: center;
-            gap: 8px;
-            background-color: var(--primary);
-            color: white;
             justify-content: center;
-            width: 100%;
+            gap: 8px;
+            color: white;
         }
 
-        button:hover { background-color: var(--primary-hover); }
-
+        .btn-primary { background-color: var(--primary); }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+        .btn-danger { background-color: var(--danger); }
+        .btn-danger:hover { background-color: var(--danger-hover); }
+        
         button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
-            background-color: #9CA3AF !important;
+            background-color: #94A3B8 !important;
         }
 
         .status-box {
-            background: #F3F4F6;
+            background: #F8FAFC;
             padding: 10px 12px;
             border-radius: 8px;
             margin-top: 15px;
@@ -122,9 +123,9 @@
             text-align: center;
         }
 
-        .status-ok { color: #059669; border-left: 3px solid #10B981; }
-        .status-err { color: #DC2626; border-left: 3px solid #EF4444; }
-        .status-wait { color: #6B7280; border-left: 3px solid #9CA3AF; }
+        .status-ok { color: #059669; border-left: 3px solid #10B981; background: #ECFDF5; }
+        .status-err { color: #DC2626; border-left: 3px solid #EF4444; background: #FEF2F2; }
+        .status-wait { color: #64748B; border-left: 3px solid #94A3B8; }
 
         .badge {
             display: inline-block;
@@ -132,43 +133,18 @@
             border-radius: 4px;
             font-size: 12px;
             font-weight: bold;
-            background: #E0E7FF;
-            color: #4338CA;
+            background: #DBEAFE;
+            color: #1E40AF;
             margin-bottom: 10px;
         }
         
         #map {
-            height: 450px;
+            height: 400px;
             width: 100%;
             border-radius: 12px;
             margin-top: 15px;
-            border: 2px solid #E5E7EB;
-            z-index: 1; /* Fix Leaflet z-index issue */
-        }
-        
-        .map-stats {
-            margin-top: 15px;
-            display: flex;
-            justify-content: space-around;
-            background: #F8FAFC;
-            padding: 15px;
-            border-radius: 12px;
-            border: 1px solid #E2E8F0;
-        }
-        .stat-item {
-            text-align: center;
-        }
-        .data-label {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-        }
-        .stat-val {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--primary);
-            margin-top: 5px;
+            border: 2px solid #E2E8F0;
+            z-index: 1; 
         }
     </style>
 </head>
@@ -176,36 +152,25 @@
 
 <div class="container">
     <div style="text-align: center;">
-        <span class="badge">📍 Dashboard Peta Dosen</span>
+        <span class="badge">📍 Tracker Modul 3</span>
     </div>
-    <h1>Modul 3: Peta Presensi Sesi</h1>
-    <p style="text-align: center; color: #6B7280; margin-bottom: 25px; font-size: 14px;">
-        Pilih sesi di bawah ini untuk melihat persebaran lokasi mahasiswa yang telah melakukan absensi.
+    <h1>Telemetry GPS Tracker</h1>
+    <p style="text-align: center; color: var(--text-muted); margin-bottom: 25px; font-size: 14px;">
+        Aplikasi ini berfungsi membaca kordinat GPS anda secara periodik (setiap 10 detik) dan memetakannya sesuai dokumen Kontrak API.
     </p>
 
     <div class="input-group">
-        <label for="session-select"><i class="fa-solid fa-list"></i> Pilih Sesi Aktif / Riwayat</label>
-        <select id="session-select">
-            <option value="">Memuat daftar sesi...</option>
-        </select>
+        <label for="device-id-input"><i class="fa-solid fa-mobile-screen"></i> Device ID Target</label>
+        <input type="text" id="device-id-input" placeholder="Misal: DEV-12345" required>
+        <small style="color: #64748B; margin-top: 5px;">Masukkan ID unik perangkat Anda.</small>
     </div>
 
     <div class="controls">
-        <button id="btn-fetch"><i class="fa-solid fa-map-location-dot"></i> Tampilkan Peta Presensi</button>
+        <button id="btn-start" class="btn-primary"><i class="fa-solid fa-play"></i> Mulai Tracking</button>
+        <button id="btn-stop" class="btn-danger" disabled><i class="fa-solid fa-stop"></i> Berhenti</button>
     </div>
     
-    <div id="status-sys" class="status-box status-wait">Sistem siap. Silakan pilih sesi dan klik tombol di atas.</div>
-
-    <div class="map-stats">
-        <div class="stat-item">
-            <div class="data-label">Mahasiswa Hadir</div>
-            <div id="stat-hadir" class="stat-val">0</div>
-        </div>
-        <div class="stat-item">
-            <div class="data-label">Koordinat Terekam</div>
-            <div id="stat-gps" class="stat-val">0</div>
-        </div>
-    </div>
+    <div id="status-sys" class="status-box status-wait">Sistem siap. Masukkan Device ID dan mulai tracking.</div>
 
     <!-- Map Container -->
     <div id="map"></div>
@@ -214,53 +179,19 @@
 <!-- Scripts -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
-    // URL Web App GAS Hardcoded sesuai instruksi (sama dengan Modul 1 & 2)
+    // URL Web App GAS Hardcoded sesuai instruksi
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxi9U-Fy-KBNtDDMZkpGCmAPNEpApeJh8q2kHLadbEi313CpOOPWpKHE35cwCJ-UBcS/exec";
     
     let map = null;
-    let markersLayer = new L.LayerGroup();
+    let markerLayer = null; // Menyimpan marker "latest"
+    let polylineLayer = null; // Menyimpan jalur "history"
+    let trackingIntervalId = null;
+    let isTracking = false;
 
-    const elSelect = document.getElementById('session-select');
+    const elDeviceId = document.getElementById('device-id-input');
     const elStatusSys = document.getElementById('status-sys');
-    const btnFetch = document.getElementById('btn-fetch');
-    const statHadir = document.getElementById('stat-hadir');
-    const statGps = document.getElementById('stat-gps');
-
-    // -----------------------------------------------------
-    // LIST SESSIONS
-    // -----------------------------------------------------
-    async function loadSessions() {
-        try {
-            updateStatus(elStatusSys, 'Mengunduh daftar sesi dari server...', 'wait');
-            const res = await fetch(`${GAS_URL}?pathInfo=presence/session/all`);
-            const json = await res.json();
-            
-            if (json.ok && json.data) {
-                elSelect.innerHTML = '<option value="">-- Pilih Sesi --</option>';
-                // Urutkan dari yang terbaru (asumsi baris di bawah adalah terbaru)
-                const sessions = json.data.reverse();
-                
-                sessions.forEach(s => {
-                    const opt = document.createElement('option');
-                    // Simpan data sebagai JSON string
-                    opt.value = JSON.stringify({ course_id: s.course_id, session_id: s.session_id });
-                    
-                    const date = new Date(s.tanggal).toLocaleDateString('id-ID');
-                    let statusAktif = s.is_active ? '✅ Aktif' : '🔒 Ditutup';
-                    opt.textContent = `${s.course_id} - ${s.session_id} (${date}) [${statusAktif}]`;
-                    elSelect.appendChild(opt);
-                });
-                updateStatus(elStatusSys, 'Daftar sesi siap. Silakan pilih.', 'ok');
-            } else {
-                elSelect.innerHTML = '<option value="">Gagal memuat sesi</option>';
-                updateStatus(elStatusSys, 'Kolom session kosong / error dari server', 'err');
-            }
-        } catch (error) {
-            console.error('Fetch sessions failed:', error);
-            elSelect.innerHTML = '<option value="">Terjadi kesalahan koneksi.</option>';
-            updateStatus(elStatusSys, 'Gagal mengunduh daftar sesi dari server.', 'err');
-        }
-    }
+    const btnStart = document.getElementById('btn-start');
+    const btnStop = document.getElementById('btn-stop');
 
     // -----------------------------------------------------
     // MAP INITIALIZATION (LEAFLET.JS)
@@ -273,88 +204,143 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors',
             maxZoom: 19
         }).addTo(map);
-
-        markersLayer.addTo(map);
     }
 
     // -----------------------------------------------------
-    // FETCH PRESENCE & PLOT
+    // TRACKING LOGIC
     // -----------------------------------------------------
-    btnFetch.addEventListener('click', async () => {
-        if(!elSelect.value) {
-            alert('Silakan pilih sesi terlebih dahulu dari dropdown!');
+
+    btnStart.addEventListener('click', () => {
+        const devId = elDeviceId.value.trim();
+        if (!devId) {
+            alert('Silakan masukkan Device ID terlebih dahulu!');
             return;
         }
 
-        const selData = JSON.parse(elSelect.value);
-        const courseId = encodeURIComponent(selData.course_id);
-        const sessionId = encodeURIComponent(selData.session_id);
-
-        btnFetch.disabled = true;
-        updateStatus(elStatusSys, 'Mengunduh data presensi & lokasi...', 'wait');
-
-        try {
-            const url = `${GAS_URL}?pathInfo=presence/list&course_id=${courseId}&session_id=${sessionId}`;
-            const res = await fetch(url);
-            const json = await res.json();
-
-            if (json.ok && json.data) {
-                // Bersihkan marker sebelumnya
-                markersLayer.clearLayers();
-
-                const students = json.data;
-                const hadir = students.filter(s => s.status === 'checked_in');
-                
-                let countGps = 0;
-                let latlngs = [];
-
-                hadir.forEach(s => {
-                    // Validasi: pastikan tipe lat & lng adalah number atau valid string
-                    if(s.lat && s.lng) {
-                        const lat = parseFloat(s.lat);
-                        const lng = parseFloat(s.lng);
-                        
-                        // Periksa validity
-                        if(!isNaN(lat) && !isNaN(lng)) {
-                            countGps++;
-                            const pos = [lat, lng];
-                            latlngs.push(pos);
-
-                            const marker = L.marker(pos);
-                            marker.bindPopup(`
-                                <div style="text-align:center;">
-                                    <strong>${s.name}</strong><br>
-                                    <span style="font-size:12px; color:#6B7280;">NIM: ${s.user_id}</span>
-                                </div>
-                            `);
-                            markersLayer.addLayer(marker);
-                        }
-                    }
-                });
-
-                // Update Stats
-                statHadir.textContent = hadir.length;
-                statGps.textContent = countGps;
-
-                if (latlngs.length > 0) {
-                    // Fit bounds to all markers
-                    const group = new L.featureGroup(markersLayer.getLayers());
-                    map.fitBounds(group.getBounds(), { padding: [50, 50], maxZoom: 16 });
-                    updateStatus(elStatusSys, `Berhasil menampilkan ${countGps} lokasi mahasiswa di peta.`, 'ok');
-                } else {
-                    updateStatus(elStatusSys, `Belum ada data GPS terekam di sesi ini. (${hadir.length} absen tanpa GPS)`, 'wait');
-                }
-
-            } else {
-                updateStatus(elStatusSys, `Terjadi kesalahan internal server.`, 'err');
-            }
-        } catch (error) {
-            console.error(error);
-            updateStatus(elStatusSys, `Gagal menghubungi server.`, 'err');
-        } finally {
-            btnFetch.disabled = false;
+        if (!navigator.geolocation) {
+            alert('Browser Anda tidak mensupport fitur Geolocation.');
+            return;
         }
+
+        isTracking = true;
+        elDeviceId.disabled = true;
+        btnStart.disabled = true;
+        btnStop.disabled = false;
+        
+        updateStatus(elStatusSys, 'Memulai tracker... menunggu lokasi pertama', 'wait');
+
+        // Jalankan siklus pertama segera
+        processGPSCycle(devId);
+
+        // Ulangi setiap 10 detik
+        trackingIntervalId = setInterval(() => {
+            processGPSCycle(devId);
+        }, 10000);
     });
+
+    btnStop.addEventListener('click', () => {
+        isTracking = false;
+        if (trackingIntervalId) clearInterval(trackingIntervalId);
+        
+        elDeviceId.disabled = false;
+        btnStart.disabled = false;
+        btnStop.disabled = true;
+        
+        updateStatus(elStatusSys, 'Tracking dihentikan.', 'wait');
+    });
+
+    function processGPSCycle(deviceId) {
+        if (!isTracking) return;
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const acc = position.coords.accuracy;
+
+                try {
+                    // 1. POST Data ke Backend (/telemetry/gps)
+                    const payload = {
+                        device_id: deviceId,
+                        ts: new Date().toISOString(), // ISO-8601
+                        lat: parseFloat(lat.toFixed(6)),
+                        lng: parseFloat(lng.toFixed(6)),
+                        accuracy_m: Math.round(acc)
+                    };
+
+                    await fetch(`${GAS_URL}?pathInfo=telemetry/gps`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    updateStatus(elStatusSys, `Koordinat terekam! (Acc: ${Math.round(acc)}m). Memfetch peta...`, 'wait');
+
+                    // 2. Refresh elemen peta (Marker /Latest & Polyline /History)
+                    await drawMapElements(deviceId);
+
+                } catch (err) {
+                    console.error('Network Error:', err);
+                    updateStatus(elStatusSys, `Gagal menghubungi server pada siklus ini.`, 'err');
+                }
+            },
+            (error) => {
+                console.warn('GPS Error:', error.message);
+                updateStatus(elStatusSys, `Gagal membaca GPS: ${error.message} (Pastikan izin Lokasi / Location nyala)`, 'err');
+            },
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+        );
+    }
+
+    async function drawMapElements(deviceId) {
+        try {
+            // A. Fetch History untuk render Polyline
+            const historyRes = await fetch(`${GAS_URL}?pathInfo=telemetry/gps/history&device_id=${encodeURIComponent(deviceId)}&limit=100`);
+            const historyJson = await historyRes.json();
+            
+            let pathCoordinates = [];
+            if (historyJson.ok && historyJson.data && historyJson.data.items) {
+                pathCoordinates = historyJson.data.items.map(item => [item.lat, item.lng]);
+                
+                // Gambar/Update Polyline
+                if (polylineLayer) map.removeLayer(polylineLayer);
+                if (pathCoordinates.length > 0) {
+                    polylineLayer = L.polyline(pathCoordinates, { color: '#2563EB', weight: 4, opacity: 0.8 }).addTo(map);
+                }
+            }
+
+            // B. Fetch Latest untuk render Marker
+            const latestRes = await fetch(`${GAS_URL}?pathInfo=telemetry/gps/latest&device_id=${encodeURIComponent(deviceId)}`);
+            const latestJson = await latestRes.json();
+            
+            if (latestJson.ok && latestJson.data) {
+                const latestData = latestJson.data;
+                const pos = [latestData.lat, latestData.lng];
+                
+                // Gambar/Update Marker Murni
+                if (markerLayer) map.removeLayer(markerLayer);
+                
+                markerLayer = L.marker(pos).addTo(map);
+                markerLayer.bindPopup(`
+                    <div style="text-align:center;">
+                        <strong>Device ID: ${latestData.device_id}</strong><br>
+                        <span style="font-size:12px; color:#64748B;">
+                          Waktu: ${new Date(latestData.ts).toLocaleTimeString()}<br>
+                          Akurasi: ${latestData.accuracy_m} m
+                        </span>
+                    </div>
+                `).openPopup();
+                
+                // Posisikan center layar supaya mengikuti titik terakhir
+                map.setView(pos, 16);
+            }
+
+            updateStatus(elStatusSys, `Peta terakhir diperbarui: ${new Date().toLocaleTimeString()} (Tracking Jalan Aktif)`, 'ok');
+
+        } catch (err) {
+            console.error('Fetch map data error', err);
+        }
+    }
 
     function updateStatus(el, text, type) {
         el.textContent = text;
@@ -363,7 +349,7 @@
 
     // Startup
     initMap();
-    loadSessions();
+
 </script>
 
 </body>

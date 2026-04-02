@@ -149,7 +149,7 @@ function handleGetSessionAccelerometer(e) {
 // ============================================
 
 function handleGPSLog(body) {
-  const { device_id, ts, lat, lng, accuracy_m, user_id, session_id } = body;
+  const { device_id, ts, lat, lng, accuracy_m } = body;
   if (!device_id || lat === undefined || lng === undefined) {
     return errorResponse('missing_gps_fields');
   }
@@ -157,14 +157,12 @@ function handleGPSLog(body) {
   const sheet = getSheet('gps'); 
   // Paksa bikin header jika sheet 'gps' baru saja dibuat dan kosong
   if (sheet.getLastRow() === 0 || sheet.getLastColumn() === 0) {
-     sheet.getRange(1, 1, 1, 7).setValues([['timestamp', 'device_id', 'user_id', 'session_id', 'lat', 'lng', 'accuracy_m']]);
+     sheet.getRange(1, 1, 1, 5).setValues([['timestamp', 'device_id', 'lat', 'lng', 'accuracy_m']]);
   }
 
   const rowData = {
     timestamp: ts || new Date().toISOString(),
     device_id: device_id,
-    user_id: user_id || 'unknown',
-    session_id: session_id || 'unknown',
     lat: lat,
     lng: lng,
     accuracy_m: accuracy_m || 0
@@ -202,6 +200,35 @@ function handleGetGPSHistory(e) {
   if(slicedItems.length === 0) return errorResponse('data_not_found_for_device');
 
   return successResponse({ device_id: device_id, items: slicedItems });
+}
+
+function handleGetGPSLatest(e) {
+  const device_id = e.parameter.device_id;
+  if (!device_id) return errorResponse('missing_parameter: device_id');
+
+  const sheet = getSheet('gps');
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return errorResponse('data_not_found_for_device');
+  
+  const headers = data[0];
+  const devIdx = headers.indexOf('device_id');
+  let latest = null;
+
+  for (let i = data.length - 1; i >= 1; i--) {
+    if (data[i][devIdx] === device_id) {
+      latest = {
+        device_id: device_id,
+        ts: data[i][headers.indexOf('timestamp')],
+        lat: parseFloat(data[i][headers.indexOf('lat')] || 0),
+        lng: parseFloat(data[i][headers.indexOf('lng')] || 0),
+        accuracy_m: parseFloat(data[i][headers.indexOf('accuracy_m')] || 0)
+      };
+      break; // Found the latest assuming rows are appended sequentially
+    }
+  }
+
+  if (!latest) return errorResponse('data_not_found_for_device');
+  return successResponse(latest);
 }
 
 // ============================================
@@ -295,6 +322,7 @@ function doGet(e) {
     
     if (path === '/telemetry/accel/latest') return handleGetLatestAccelerometer(e);
     if (path === '/telemetry/accel/session') return handleGetSessionAccelerometer(e);
+    if (path === '/telemetry/gps/latest') return handleGetGPSLatest(e);
     if (path === '/telemetry/gps/history') return handleGetGPSHistory(e);
     
     return errorResponse('endpoint_not_found');
@@ -345,8 +373,8 @@ function getPathInfo(e) {
 // ============================================
 
 function handleCreateSession(body) {
-  const { course_id, session_id, tanggal, start_time, end_time } = body;
-  if (!course_id || !session_id || !tanggal || !start_time || !end_time) return errorResponse('missing_field');
+  const { course_id, session_id } = body;
+  if (!course_id || !session_id) return errorResponse('missing_field');
   
   const existingActive = findActiveSession(course_id, session_id);
   if (existingActive) return errorResponse('session_already_active');
@@ -354,7 +382,7 @@ function handleCreateSession(body) {
   const sessionInternalId = generateId('SES');
   const sessionData = {
     session_internal_id: sessionInternalId, course_id: course_id, session_id: session_id,
-    tanggal: tanggal, start_time: start_time, end_time: end_time, is_active: true,
+    tanggal: new Date().toISOString().split('T')[0], start_time: '', end_time: '', is_active: true,
     created_by: 'DOC-001', created_at: new Date().toISOString()
   };
   addRow(SHEETS.SESSIONS, sessionData);

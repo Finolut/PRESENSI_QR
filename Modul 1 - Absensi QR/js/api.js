@@ -138,13 +138,10 @@ if (queryString) {
   /**
    * Buat sesi presensi baru (dosen)
    */
-  async createSession({ course_id, session_id, tanggal, start_time, end_time }) {
+  async createSession({ course_id, session_id }) {
     return this._post('/presence/session/create', {
       course_id,
-      session_id,
-      tanggal,
-      start_time,
-      end_time
+      session_id
     });
   },
   

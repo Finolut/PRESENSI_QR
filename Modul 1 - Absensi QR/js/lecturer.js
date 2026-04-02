@@ -41,22 +41,10 @@ setupUI() {
 },
   
   /**
-   * Set default date/time for session form
+   * Set default date/time for session form (Dihapus karena mod1 murni simplifikasi)
    */
   setDefaultDateTime() {
-    const now = new Date();
-    
-    // Date
-    const dateStr = now.toISOString().split('T')[0];
-    document.getElementById('session-date').value = dateStr;
-    
-    // Start time (now)
-    const startTime = now.toTimeString().slice(0, 5);
-    document.getElementById('session-time').value = startTime;
-    
-    // End time (now + 2 hours)
-    const endTime = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-    document.getElementById('session-end').value = endTime.toTimeString().slice(0, 5);
+    // Tidak ada input date/time lagi
   },
   
   /**
@@ -96,10 +84,7 @@ setupUI() {
   async handleCreateSession() {
     const formData = {
       course_id: document.getElementById('course-id-input').value.trim(),
-      session_id: document.getElementById('session-id-input').value.trim(),
-      tanggal: document.getElementById('session-date').value,
-      start_time: document.getElementById('session-time').value,
-      end_time: document.getElementById('session-end').value
+      session_id: document.getElementById('session-id-input').value.trim()
     };
     
     // Basic validation
@@ -127,7 +112,7 @@ setupUI() {
       // Display active session info
       document.getElementById('active-course-id').textContent = formData.course_id;
       document.getElementById('active-session-id').textContent = formData.session_id;
-      document.getElementById('active-start-time').textContent = formData.start_time;
+      document.getElementById('active-start-time').textContent = new Date().toLocaleTimeString();
       
       // Start QR generation loop
       this.startQRGeneration();
