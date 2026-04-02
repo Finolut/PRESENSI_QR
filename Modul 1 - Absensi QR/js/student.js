@@ -216,22 +216,13 @@ async function handleAttendance(qrToken) {
     }
 
     async function sendAccelBatch(samples, userId, sessionId) {
-        // Karena Modul 1 dan 2 menggunakan GAS yang sama, parameter tetap mengikuti struktur Modul 2
-        const targetUrl = `${ACCEL_GAS_URL}?pathInfo=telemetry/accel`;
-        
-        const payload = {
-            device_id: sessionDeviceId,
-            session_id: sessionId,
-            user_id: userId,
-            ts: new Date().toISOString(),
-            samples: samples
-        };
-
         try {
-            await fetch(targetUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(payload)
+            await API.sendAccelerometer({
+                device_id: sessionDeviceId,
+                session_id: sessionId,
+                user_id: userId,
+                ts: new Date().toISOString(),
+                samples: samples
             });
             console.log(`📡 [Background] Terkirim ${samples.length} titik accelerometer`);
         } catch (err) {
@@ -287,24 +278,17 @@ async function handleAttendance(qrToken) {
                 const lng = position.coords.longitude;
                 const acc = position.coords.accuracy;
 
-                const targetUrl = `${ACCEL_GAS_URL}?pathInfo=telemetry/gps`;
-                const payload = {
-                    device_id: deviceId, // Gunakan deviceId session yang sama dengan accelerometer
-                    user_id: userId || 'unknown_user_UI', 
-                    session_id: (document.getElementById('session-id')?.innerText || 'default_session').trim(),
-                    ts: new Date().toISOString(),
-                    lat: parseFloat(lat.toFixed(5)),
-                    lng: parseFloat(lng.toFixed(5)),
-                    accuracy_m: Math.round(acc)
-                };
-
                 try {
-                    await fetch(targetUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify(payload)
+                    await API.sendGPS({
+                        device_id: deviceId, // Gunakan deviceId session yang sama dengan accelerometer
+                        user_id: userId || 'unknown_user_UI', 
+                        session_id: (document.getElementById('session-id')?.innerText || 'default_session').trim(),
+                        ts: new Date().toISOString(),
+                        lat: parseFloat(lat.toFixed(5)),
+                        lng: parseFloat(lng.toFixed(5)),
+                        accuracy_m: Math.round(acc)
                     });
-                    console.log(`🗺️ [GPS] Berhasil merekam koordinat di map: Lat ${payload.lat}, Lng ${payload.lng}`);
+                    console.log(`🗺️ [GPS] Berhasil merekam koordinat di map: Lat ${lat}, Lng ${lng}`);
                     if(gpsInd) gpsInd.innerHTML = '<span style="font-size:12px; color:#10B981; margin-top:5px; display:block;">📍 Lokasi Presensi Terkunci!</span>';
                 } catch (err) {
                     console.error('Koneksi GPS ke server Error:', err);

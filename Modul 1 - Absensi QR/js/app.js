@@ -17,48 +17,37 @@ const App = {
    * Bind global event listeners
    */
   bindGlobalEvents() {
-    // Auth form toggles
-    document.getElementById('show-register').addEventListener('click', (e) => {
-      e.preventDefault();
-      document.getElementById('login-form').classList.add('hidden');
-      document.getElementById('register-form').classList.remove('hidden');
-      e.target.closest('.auth-toggle').classList.add('hidden');
-      e.target.closest('.auth-toggle').nextElementSibling.classList.remove('hidden');
-    });
-    
-    document.getElementById('show-login').addEventListener('click', (e) => {
-      e.preventDefault();
-      document.getElementById('register-form').classList.add('hidden');
-      document.getElementById('login-form').classList.remove('hidden');
-      e.target.closest('.auth-toggle').classList.add('hidden');
-      e.target.closest('.auth-toggle').previousElementSibling.classList.remove('hidden');
-    });
-    
-    // Login form submit
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('login-email').value;
-      const password = document.getElementById('login-password').value;
-      await Auth.handleLogin(email, password);
-    });
-    
-    // Register form submit
-    document.getElementById('register-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const data = {
-        name: document.getElementById('register-name').value,
-        email: document.getElementById('register-email').value,
-        password: document.getElementById('register-password').value,
-        confirm: document.getElementById('register-confirm').value
-      };
-      await Auth.handleRegister(data);
-    });
+    // Student Form Submit
+    const studentForm = document.getElementById('student-entry-form');
+    if (studentForm) {
+      studentForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const nim = document.getElementById('student-nim-input').value.trim();
+        if (nim) {
+          localStorage.setItem('PRESQR_USER_ROLE', 'mahasiswa');
+          localStorage.setItem(CONFIG.STORAGE_KEYS.USER, JSON.stringify({ user_id: nim, role: 'mahasiswa' }));
+          this.checkAuthAndRoute();
+        }
+      });
+    }
+
+    // Lecturer Button Click
+    const lecturerBtn = document.getElementById('btn-lecturer-entry');
+    if (lecturerBtn) {
+      lecturerBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const docId = 'DOC-001'; // Default dummy ID
+        localStorage.setItem('PRESQR_USER_ROLE', 'dosen');
+        localStorage.setItem(CONFIG.STORAGE_KEYS.USER, JSON.stringify({ user_id: docId, role: 'dosen' }));
+        this.checkAuthAndRoute();
+      });
+    }
 
     const studentLogoutBtn = document.getElementById('student-logout');
     if (studentLogoutBtn) {
       studentLogoutBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        Auth.logout();
+        this.logout();
       });
     }
     
@@ -66,33 +55,37 @@ const App = {
     if (lecturerLogoutBtn) {
       lecturerLogoutBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        Auth.logout();
+        this.logout();
       });
     }
+  },
+
+  logout() {
+    localStorage.removeItem('PRESQR_USER_ROLE');
+    localStorage.removeItem(CONFIG.STORAGE_KEYS.USER);
+    this.checkAuthAndRoute();
   },
   
   /**
    * Check auth status and route to appropriate view
    */
   checkAuthAndRoute() {
-    if (Auth.isAuthenticated()) {
-      const user = Auth.getCurrentUser();
-      if (user.role === 'mahasiswa') {
-        this.showView('student-dashboard');
-        StudentDashboard.init();
-      } else if (user.role === 'dosen') {
-        this.showView('lecturer-dashboard');
-        LecturerDashboard.init();
-      }
+    const role = localStorage.getItem('PRESQR_USER_ROLE');
+    if (role === 'mahasiswa') {
+      this.showView('student-dashboard');
+      if (typeof StudentDashboard !== 'undefined') StudentDashboard.init();
+    } else if (role === 'dosen') {
+      this.showView('lecturer-dashboard');
+      if (typeof LecturerDashboard !== 'undefined') LecturerDashboard.init();
     } else {
-      this.showView('auth-section');
+      this.showView('role-selection');
     }
   },
   
   /**
    * Show specific view, hide others
    */
-showView(viewId) {
+  showView(viewId) {
     // Hide all views
     document.querySelectorAll('.view').forEach(view => {
       view.classList.remove('active');
@@ -108,7 +101,7 @@ showView(viewId) {
     
     // Update document title
     const titles = {
-      'auth-section': '🔐 Login - Presensi QR',
+      'role-selection': '🎓 Presensi QR - Pilih Peran',
       'student-dashboard': '📱 Dashboard Mahasiswa',
       'lecturer-dashboard': '👨‍🏫 Dashboard Dosen'
     };
@@ -196,13 +189,12 @@ document.addEventListener('DOMContentLoaded', () => {
 // Handle page visibility (pause polling when tab is hidden)
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    // Optional: pause intervals when tab is not visible
-    if (StudentDashboard.refreshInterval) {
+    if (typeof StudentDashboard !== 'undefined' && StudentDashboard.refreshInterval) {
       clearInterval(StudentDashboard.refreshInterval);
     }
   } else {
-    // Resume when tab is visible
-    if (Auth.isAuthenticated() && Auth.getCurrentUser().role === 'mahasiswa') {
+    const role = localStorage.getItem('PRESQR_USER_ROLE');
+    if (role === 'mahasiswa' && typeof StudentDashboard !== 'undefined') {
       StudentDashboard.startStatusPolling();
     }
   }

@@ -236,10 +236,6 @@ function readRequestBody(e) {
   try { return JSON.parse(e.postData.contents); } catch (err) { return null; }
 }
 
-function hashPassword(password) {
-  return Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, password));
-}
-
 function findRowByColumn(sheetName, columnName, value) {
   const sheet = getSheet(sheetName);
   const data = sheet.getDataRange().getValues();
@@ -290,7 +286,6 @@ function updateRow(sheetName, rowIndex, updates) {
 function doGet(e) {
   try {
     const path = getPathInfo(e);
-    if (path === '/auth/me') return handleGetAuthMe(e);
     if (path === '/presence/status') return handleGetPresenceStatus(e);
     if (path === '/presence/list') return handleGetPresenceList(e);
     if (path === '/presence/session/active') return handleGetActiveSession(e);
@@ -319,8 +314,6 @@ function doPost(e) {
     }
     
     if (!body) return errorResponse('invalid_json_or_empty');
-    if (path === '/auth/register') return handleRegister(body);
-    if (path === '/auth/login') return handleLogin(body);
     if (path === '/presence/session/create') return handleCreateSession(body);
     if (path === '/presence/qr/generate') return handleGenerateQr(body);
     if (path === '/presence/checkin') return handleCheckin(body);
@@ -348,44 +341,8 @@ function getPathInfo(e) {
 }
 
 // ============================================
-// AUTHENTICATION & PRESENCE MODULE LOGICS
+// PRESENCE MODULE LOGICS
 // ============================================
-
-function handleRegister(body) {
-  const { name, email, password } = body;
-  if (!name || !email || !password) return errorResponse('missing_field');
-  if (!isValidEmail(email)) return errorResponse('invalid_email_format');
-  if (password.length < 6) return errorResponse('password_too_short');
-  
-  const existing = findRowByColumn(SHEETS.USERS, 'email', email);
-  if (existing) return errorResponse('email_already_registered');
-  
-  const userId = generateId('USR');
-  const userData = {
-    user_id: userId, name: name.trim(), email: email.toLowerCase().trim(),
-    password_hash: hashPassword(password), role: 'mahasiswa', created_at: new Date().toISOString()
-  };
-  addRow(SHEETS.USERS, userData);
-  return successResponse({ user_id: userId, name: userData.name, email: userData.email, role: userData.role });
-}
-
-function isValidEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
-
-function handleLogin(body) {
-  const { email, password } = body;
-  if (!email || !password) return errorResponse('missing_field');
-  const user = findRowByColumn(SHEETS.USERS, 'email', email);
-  if (!user) return errorResponse('invalid_credentials');
-  
-  const inputHash = hashPassword(password);
-  if (String(user.rowData[user.headers.indexOf('password_hash')]) !== String(inputHash)) {
-    return errorResponse('invalid_credentials');
-  }
-  const sessionToken = generateId('SES');
-  return successResponse({ user_id: user.rowData[user.headers.indexOf('user_id')], role: user.rowData[user.headers.indexOf('role')], token: sessionToken });
-}
-
-function handleGetAuthMe(e) { return errorResponse('not_implemented'); }
 
 function handleCreateSession(body) {
   const { course_id, session_id, tanggal, start_time, end_time } = body;
@@ -567,10 +524,6 @@ function handleGetPresenceList(e) {
   if (!session) return errorResponse('session_not_found');
   const sessionInternalId = session.rowData[session.headers.indexOf('session_internal_id')];
   
-  const usersSheet = getSheet(SHEETS.USERS);
-  const usersData = usersSheet.getDataRange().getValues();
-  const userHeaders = usersData[0];
-  
   const presenceSheet = getSheet(SHEETS.PRESENCE);
   const presenceData = presenceSheet.getDataRange().getValues();
   const checkedInUsers = new Set();
@@ -610,25 +563,20 @@ function handleGetPresenceList(e) {
   }
   
   const result = [];
-  const roleIdx = userHeaders.indexOf('role');
-  const userIdIdx = userHeaders.indexOf('user_id');
-  const nameIdx = userHeaders.indexOf('name');
+  const allUserIds = new Set([...checkedInUsers, ...Object.keys(latestGps)]);
   
-  for (let i = 1; i < usersData.length; i++) {
-    if (usersData[i][roleIdx] === 'mahasiswa') {
-      const uId = String(usersData[i][userIdIdx]);
-      const status = checkedInUsers.has(uId) ? 'checked_in' : 'not_yet';
-      const userLoc = latestGps[uId] || null;
-      
-      result.push({ 
-        user_id: uId, 
-        name: usersData[i][nameIdx], 
-        status: status,
-        lat: userLoc ? parseFloat(userLoc.lat) : null,
-        lng: userLoc ? parseFloat(userLoc.lng) : null
-      });
-    }
-  }
+  allUserIds.forEach(uId => {
+    const status = checkedInUsers.has(uId) ? 'checked_in' : 'not_yet';
+    const userLoc = latestGps[uId] || null;
+    result.push({ 
+      user_id: uId, 
+      name: uId, 
+      status: status,
+      lat: userLoc ? parseFloat(userLoc.lat) : null,
+      lng: userLoc ? parseFloat(userLoc.lng) : null
+    });
+  });
+  
   return successResponse(result);
 }
 

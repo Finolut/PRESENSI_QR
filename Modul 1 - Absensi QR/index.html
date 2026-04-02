@@ -30,78 +30,32 @@
   <!-- Main Container -->
   <main id="app" class="container">
     
-    <!-- AUTH SECTION -->
-    <section id="auth-section" class="view active">
+    <!-- ROLE SELECTION SECTION -->
+    <section id="role-selection" class="view active">
       <div class="auth-card">
         <div class="auth-header">
           <h1>🎓 Presensi QR</h1>
           <p>Komputasi Awan - Praktikum</p>
         </div>
         
-        <!-- Login Form -->
-        <form id="login-form" class="auth-form">
+        <form id="student-entry-form" class="auth-form">
           <div class="form-group">
-            <label for="login-email">Email</label>
-            <input type="email" id="login-email" required 
-                   placeholder="contoh: mahasiswa@univ.ac.id"
-                   pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$">
+            <label for="student-nim-input">Masukkan NIM untuk Check-in</label>
+            <input type="text" id="student-nim-input" required 
+                   placeholder="Contoh: 123456789">
           </div>
-          
-          <div class="form-group">
-            <label for="login-password">Password</label>
-            <input type="password" id="login-password" required 
-                   placeholder="Minimal 6 karakter" minlength="6">
-          </div>
-          
           <button type="submit" class="btn btn-primary btn-full">
-            🔐 Login
+            📱 Masuk sebagai Mahasiswa
           </button>
         </form>
         
-        <!-- Register Toggle -->
-        <div class="auth-toggle">
-          <p>Belum punya akun? 
-            <a href="#" id="show-register">Daftar sebagai Mahasiswa</a>
-          </p>
+        <div style="text-align: center; margin: 20px 0;">
+          <span style="color: #666;">- ATAU -</span>
         </div>
         
-        <!-- Register Form (Hidden by default) -->
-        <form id="register-form" class="auth-form hidden">
-          <div class="form-group">
-            <label for="register-name">Nama Lengkap</label>
-            <input type="text" id="register-name" required 
-                   placeholder="Nama sesuai KTM">
-          </div>
-          
-          <div class="form-group">
-            <label for="register-email">Email</label>
-            <input type="email" id="register-email" required 
-                   placeholder="contoh: nim@univ.ac.id"
-                   pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$">
-          </div>
-          
-          <div class="form-group">
-            <label for="register-password">Password</label>
-            <input type="password" id="register-password" required 
-                   placeholder="Minimal 6 karakter" minlength="6">
-          </div>
-          
-          <div class="form-group">
-            <label for="register-confirm">Konfirmasi Password</label>
-            <input type="password" id="register-confirm" required 
-                   placeholder="Ulangi password">
-          </div>
-          
-          <button type="submit" class="btn btn-success btn-full">
-            ✨ Daftar Sekarang
-          </button>
-        </form>
-        
-        <div class="auth-toggle">
-          <p>Sudah punya akun? 
-            <a href="#" id="show-login">Login</a>
-          </p>
-        </div>
+        <button id="btn-lecturer-entry" class="btn btn-outline btn-full">
+          👨‍🏫 Masuk sebagai Dosen
+        </button>
       </div>
     </section>
 
@@ -307,7 +261,6 @@
   <script src="js/config.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/api.js"></script>
-  <script src="js/auth.js"></script>
   <script src="js/qr-scanner.js"></script>
   <script src="js/student.js"></script>
   <script src="js/lecturer.js"></script>

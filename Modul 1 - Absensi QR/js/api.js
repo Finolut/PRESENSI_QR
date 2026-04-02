@@ -81,31 +81,7 @@ if (queryString) {
     });
   },
   
-  // ============================================
-  // 🔐 AUTH ENDPOINTS
-  // ============================================
-  
-  /**
-   * Register user baru (auto-role: mahasiswa)
-   */
-  async register({ name, email, password }) {
-    return this._post('/auth/register', {
-      name,
-      email,
-      password
-      // role otomatis 'mahasiswa' di backend
-    });
-  },
-  
-  /**
-   * Login user
-   */
-  async login({ email, password }) {
-    return this._post('/auth/login', {
-      email,
-      password
-    });
-  },
+
   
   // ============================================
   // 📋 PRESENCE ENDPOINTS
